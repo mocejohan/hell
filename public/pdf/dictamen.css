@@ -1,0 +1,118 @@
+/* public/pdf/dictamen.css */
+@page {
+    margin: 20mm 15mm;
+}
+
+html {
+    font-size: 16px;
+}
+
+body {
+    font-family: Arial, DejaVu Sans, sans-serif;
+    font-size: 0.75rem;
+    color: #111;
+}
+
+.cuerpo {
+    /* border-radius: 150px !important; */
+    border-style: solid !important;
+    border-width: .25em;
+    padding: .5em;
+}
+
+.text-lg {
+    font-size: 1.75em;
+    font-weight: 600;
+}
+
+/* = 12px */
+.text-base {
+    font-size: 1em;
+}
+
+/* = 12px */
+.text-md {
+    font-size: 0.875em;
+}
+
+/* ≈ 10.5px, “un poco más pequeño” */
+.text-sm {
+    font-size: 0.75em;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+td,
+th {
+    padding: 6px;
+    /* border: 1px solid #ddd; */
+    /* vertical-align: top; */
+}
+
+.muted {
+    color: #666;
+}
+
+.mb-2 {
+    margin-bottom: 8px;
+}
+
+.justify {
+    text-align: justify;
+}
+
+.justify-words {
+    text-align: justify;
+    text-justify: inter-word;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-middle {
+    vertical-align: middle;
+}
+
+/* Alineaciones por columna (opcional) */
+.encabezado .logo {
+    width: 140px;
+}
+
+.encabezado .titulo {
+    text-align: center;
+}
+
+.encabezado .folio {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Evita espacio extra bajo la imagen en PDF */
+.encabezado img {
+    display: block;
+}
+
+.row {
+    width: 100%; 
+    height: 28px;
+}
+
+.col-1{
+    display: inline-block; 
+    width:10%;
+    vertical-align: bottom;
+}
+.col-2{
+    display: inline-block; 
+    width:80%;
+    vertical-align: bottom;
+}
+

@@ -200,10 +200,6 @@ class Reportes extends Component
         $this->comentarioTexto = '';
     }
 
-    public function imprimirDictamen(){
-        
-    }
-
     public function guardarComentario()
     {
         $this->validate([

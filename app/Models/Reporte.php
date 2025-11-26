@@ -139,6 +139,6 @@ class Reporte extends Model
 
     public function dictamenes()
 {
-    return $this->hasMany(\App\Models\Dictamen::class);
+    return $this->hasMany(\App\Models\Dictamen::class, 'reporte_id');
 }
 }

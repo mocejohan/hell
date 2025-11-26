@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DictamenController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\DictamenPdfController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,4 +49,13 @@ Route::middleware([
 
     Route::get('/api/reportes/{id}', [ReporteController::class, 'showBasic'])
         ->name('reportes.lookup');
+
+    // Route::get('/reportes/{reporte}/dictamen.pdf', [DictamenPdfController::class, 'show'])
+    //     ->name('reportes.dictamen.pdf')
+    //     ->middleware('permission:ImprimirDictamen');
+
+    Route::middleware(['auth', 'permission:ImprimirDictamen'])
+    ->get('/reportes/{reporte}/dictamen.pdf', [DictamenPdfController::class, 'show'])
+    ->name('reportes.dictamen.pdf');
+
 });

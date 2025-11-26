@@ -103,11 +103,11 @@
 
             @can('ImprimirDictamen')
                 @if ($reporte->dictamenes_count > 0)
-                    <button wire:click="dictamen"
+                    <a href="{{ route('reportes.dictamen.pdf', $reporte->id) }}" target="_blank" rel="noopener"
                         class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition">
                         <i class="fa-solid fa-clipboard-check text-gray-600"></i>
                         <span>Dictamen</span>
-                    </button>
+                    </a>
                 @endif
             @endcan
 
