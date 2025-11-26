@@ -29,6 +29,11 @@
                             Consultas
                         </x-nav-link>
                     @endcan
+                    @role('Tecnico')
+                        <x-nav-link href="{{ route('dictamen') }}" :active="request()->routeIs('dictamen')">
+                            Dictamen
+                        </x-nav-link>
+                    @endrole
                     @can('administrar')
                         <x-nav-link href="{{ url('/admin') }}" 
                             target="_blank" rel="noopener noreferrer"

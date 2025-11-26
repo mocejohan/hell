@@ -28,5 +28,6 @@ class RolSeeder extends Seeder
         Permission::create(['name' => 'atendido'])->syncRoles([$rolMesaControl]);
         Permission::create(['name' => 'cancelar'])->syncRoles([$rolMesaControl]);
         Permission::create(['name' => 'comentar'])->syncRoles([$rolMesaControl, $rolTecnico]);
+        Permission::create(['name' => 'ImprimirDictamen'])->syncRoles([$rolMesaControl, $rolTecnico]);
     }
 }

@@ -1,6 +1,7 @@
 <div class="bg-white shadow rounded-lg overflow-hidden border border-gray-300 mb-2">
     {{-- Header --}}
     <div class="px-4 py-1 {{ $reporte->color_header }} flex flex-col justify-between items-start">
+        <h2 class="font-semibold text-gray-800 text-md">Reporte #{{ $reporte->id }}</h2>
         <h3 class="font-semibold text-gray-800 text-sm">{{ $reporte->categoria->name }}</h3>
 
         @if ($reporte->evento_nombre)
@@ -99,6 +100,17 @@
                     <span>Comentar</span>
                 </button>
             @endcan
+
+            @can('ImprimirDictamen')
+                @if ($reporte->dictamenes_count > 0)
+                    <button wire:click="dictamen"
+                        class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition">
+                        <i class="fa-solid fa-clipboard-check text-gray-600"></i>
+                        <span>Dictamen</span>
+                    </button>
+                @endif
+            @endcan
+
         </div>
     @endif
 </div>

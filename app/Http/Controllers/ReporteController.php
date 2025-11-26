@@ -62,4 +62,31 @@ class ReporteController extends Controller
     {
         //
     }
+
+    public function showBasic($id)
+    {
+        $reporte = Reporte::with(['departamento', 'estado', 'tecnico'])
+            ->find($id);
+
+        if (!$reporte) {
+            return response()->json(['ok' => false, 'message' => 'Reporte no encontrado.'], 404);
+        }
+
+        return response()->json([
+            'ok'   => true,
+            'data' => [
+                'id'                       => $reporte->id,
+                'departamento_congreso_id' => $reporte->departamento_congreso_id,
+                'departamento_nombre'      => optional($reporte->departamento)->name,
+                'solicitante'              => $reporte->solicitante,
+                'tecnico_user_id'          => $reporte->tecnico_user_id,
+                'tecnico_nombre'           => optional($reporte->tecnico)->name,
+                'numero_inventario'        => $reporte->numero_inventario,
+                'estado_id'                => $reporte->estado_id,
+                'estado_nombre'            => optional($reporte->estado)->name,
+                'created_at'               => optional($reporte->created_at)?->format('d/m/Y H:i'),
+                'updated_at'               => optional($reporte->updated_at)?->format('d/m/Y H:i'),
+            ],
+        ]);
+    }
 }

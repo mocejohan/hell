@@ -33,6 +33,10 @@ class ReportesItem extends Component
         $this->dispatch('abrirModalComentario', id: $this->reporte->id);
     }
 
+    public function dictamen(){
+        
+    }
+
     protected $listeners = ['refrescarComentarios'];
 
     public function refrescarComentarios(int $id)

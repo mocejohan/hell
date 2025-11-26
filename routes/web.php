@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DictamenController;
+use App\Http\Controllers\ReporteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,5 +41,11 @@ Route::middleware([
         return view('consultas');
     })->name('consultas');
 
-    
+    Route::get('/dictamen', function () {
+        return view('dictamen');
+    })->name('dictamen');
+    Route::post('/dictamenes', [DictamenController::class, 'store'])->name('dictamenes.store');
+
+    Route::get('/api/reportes/{id}', [ReporteController::class, 'showBasic'])
+        ->name('reportes.lookup');
 });

@@ -132,4 +132,13 @@ class Reporte extends Model
 
         return 'bg-slate-100';
     }
+
+    public function dictamen(){
+        return $this->hasOne(Dictamen::class);
+    }
+
+    public function dictamenes()
+{
+    return $this->hasMany(\App\Models\Dictamen::class);
+}
 }

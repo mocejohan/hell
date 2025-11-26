@@ -200,6 +200,10 @@ class Reportes extends Component
         $this->comentarioTexto = '';
     }
 
+    public function imprimirDictamen(){
+        
+    }
+
     public function guardarComentario()
     {
         $this->validate([
@@ -317,6 +321,7 @@ class Reportes extends Component
 
         // Base: solo reportes abiertos, con relaciones
         $baseQuery = Reporte::with(['categoria', 'tecnico', 'estado', 'comentarios.user'])
+            ->withCount('dictamenes')
             ->abiertos()   // tu scope: no cerrados/ni cancelados
             ->latest();
 
