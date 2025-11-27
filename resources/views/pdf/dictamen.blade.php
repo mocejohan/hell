@@ -49,7 +49,6 @@
                     <div class="col-2">{{ $reporte->id }}</div>
                 </div>
                 <div class="row">
-                    {{-- <div class="col-1"></div> --}}
                     <div class="col-2" style="width: 100%">
                         <table style="border:1px solid #818181;" >
                             <tr>

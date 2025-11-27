@@ -69,6 +69,7 @@ class ReportesAtendidos extends Component
             'tecnicos'
         ])
             ->whereHas('estado', fn($q) => $q->where('name', 'Cerrado'))
+            ->withCount('dictamenes')
             ->when($this->fechainicial, fn($q) => $q->whereDate('created_at', '>=', $this->fechainicial))
             ->when($this->fechafinal,   fn($q) => $q->whereDate('created_at', '<=', $this->fechafinal))
             ->when($this->tecnicoId, function ($q, $id) {

@@ -101,16 +101,16 @@
                 </button>
             @endcan
 
-            @can('ImprimirDictamen')
-                @if ($reporte->dictamenes_count > 0)
-                    <a href="{{ route('reportes.dictamen.pdf', $reporte->id) }}" target="_blank" rel="noopener"
-                        class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition">
-                        <i class="fa-solid fa-clipboard-check text-gray-600"></i>
-                        <span>Dictamen</span>
-                    </a>
-                @endif
-            @endcan
-
+            
         </div>
-    @endif
+        @endif
+        @can('ImprimirDictamen')
+            @if ($reporte->dictamenes_count > 0)
+                <a href="{{ route('reportes.dictamen.pdf', $reporte->id) }}" target="_blank" rel="noopener"
+                    class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition">
+                    <i class="fa-solid fa-clipboard-check text-gray-600"></i>
+                    <span>Dictamen</span>
+                </a>
+            @endif
+        @endcan
 </div>
