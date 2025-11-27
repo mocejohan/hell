@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('serie');
             $table->text('diagnostico');
             $table->text('sugerencia');
-            $table->text('observaciones');
+            $table->text('observaciones')->nullable();
             $table->timestamps();
         });
     }

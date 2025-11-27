@@ -35,100 +35,98 @@
     <div class="cuerpo">
         <div class="row">
             <div class="col-1">Usuario:</div>
-            <div class="col-2 text-lg">{{ $reporte->solicitante }}</div>
+            <div class="col-2"><strong>{{ $reporte->solicitante }}</strong></div>
         </div>
         <div class="row">
             <div class="col-1">Área:</div>
-            <div class="col-2 text-lg">{{ $reporte->departamento->name ?? '-' }}</div>
-        </div>
+            <div class="col-2"><strong>{{ $reporte->departamento->name ?? '-' }}</strong></div>
+        </div></br>
         <div class="row">
             <div class="col-1" style="vertical-align: top;">Reporte:</div>
             <div class="col-2">
-                <div class="row">
-                    <div class="col-1">Número:</div>
+                <div class="row" style="vertical-align: top">
+                    <div class="col-1" style="width: 16%">Help Desk #:</div>
                     <div class="col-2">{{ $reporte->id }}</div>
                 </div>
                 <div class="row">
-                    <div class="col-1"></div>
-                    <div class="col-2">
-                        <table>
+                    {{-- <div class="col-1"></div> --}}
+                    <div class="col-2" style="width: 100%">
+                        <table style="border:1px solid #818181;" >
                             <tr>
-                                <th>Inventario</th>
-                                <td>{{ $dictamen->inventario }}</td>
-                                <th>Equipo</th>
-                                <td>{{ $dictamen->equipo }}</td>
+                                <td>Equipo</td>
+                                <th colspan="3">{{ $dictamen->equipo }}</th>
                             </tr>
                             <tr>
-                                <th>Marca</th>
-                                <td>{{ $dictamen->marca }}</td>
-                                <th>Modelo</th>
-                                <td>{{ $dictamen->modelo }}</td>
+                                <td>Marca</td>
+                                <th class="text-left">{{ $dictamen->marca }}</th>
+                                <td>Modelo</td>
+                                <th class="text-left">{{ $dictamen->modelo }}</th>
                             </tr>
                             <tr>
-                                <th>Serie</th>
-                                <td colspan="3">{{ $dictamen->serie }}</td>
+                                <td>Serie</td>
+                                <th class="text-left">{{ $dictamen->serie }}</th>
+                                <td>Inventario</td>
+                                <th class="text-left">{{ $dictamen->inventario }}</th>
                             </tr>
                         </table>
                     </div>
                 </div>
             </div>
-        </div>
-        {{-- <h2>Datos del equipo</h2>
-        <table>
-            <tr>
-                <th>Inventario</th>
-                <td>{{ $dictamen->inventario }}</td>
-                <th>Equipo</th>
-                <td>{{ $dictamen->equipo }}</td>
-            </tr>
-            <tr>
-                <th>Marca</th>
-                <td>{{ $dictamen->marca }}</td>
-                <th>Modelo</th>
-                <td>{{ $dictamen->modelo }}</td>
-            </tr>
-            <tr>
-                <th>Serie</th>
-                <td colspan="3">{{ $dictamen->serie }}</td>
-            </tr>
-        </table> --}}
-
+        </div></br>
         <div class="row">
             <div class="col-1">Diagnóstico</div>
-            <div class="col-2"><p>{!! nl2br(e($dictamen->diagnostico)) !!}</p></div>
+            <div class="col-2">
+                <p>{!! nl2br(e($dictamen->diagnostico)) !!}</p>
+            </div>
         </div>
         <div class="row">
             <div class="col-1">Sugerencia</div>
-            <div class="col-2"><p>{!! nl2br(e($dictamen->sugerencia)) !!}</p></div>
+            <div class="col-2">
+                <p>{!! nl2br(e($dictamen->sugerencia)) !!}</p>
+            </div>
         </div>
         <div class="row">
             @if (!empty($dictamen->observaciones))
-            <div class="col-1">Observaciones</div>
-            <div class="col-2"><p>{!! nl2br(e($dictamen->observaciones)) !!}</p></div>
+                <div class="col-1">Observaciones</div>
+                <div class="col-2">
+                    <p>{!! nl2br(e($dictamen->observaciones)) !!}</p>
+                </div>
             @endif
         </div>
-
-
-        {{-- <h2>Información del reporte</h2>
-        <table>
-            <tr>
-                <th>Área solicitante</th>
-                <td>{{ $reporte->departamento->name ?? '-' }}</td>
-                <th>Solicitante</th>
-                <td>{{ $reporte->solicitante ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>Estado</th>
-                <td>{{ $reporte->estado->name ?? '-' }}</td>
-                <th>Categoría</th>
-                <td>{{ $reporte->categoria->name ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>Técnico principal</th>
-                <td colspan="3">{{ $reporte->tecnico->name ?? '-' }}</td>
-            </tr>
-        </table> --}}
     </div>
+    <div class="row">
+        <p class="text-md" style="">Sin otro particular, le envío un cordial saludo</p>
+    </div>
+    <div class="row" class="text-md">
+        <div class="col-1 text-md" style="width:6%;"><strong>NOTA:</strong></div>
+        <div class="col-2 text-md" style="width:93%;"><strong>ESTE DICTAMEN DEBERÁ ADJUNTARSE A SU SOLICITUD DIRIGIDA A
+                LA DIRECCIÓN DE RECURSOS MATERIALES Y SERVICIOS GENERALES</strong></div>
+    </div>
+    <br><br><br><br><br>
+    <table class="text-center">
+        <tr>
+            <td style="border-bottom:1px solid #000; padding-top:12px">&nbsp;</td>
+            <td></td>
+            <td style="border-bottom:1px solid #000; padding-top:12px">&nbsp;</td>
+            <td></td>
+            <td style="border-bottom:1px solid #000; padding-top:12px">&nbsp;</td>
+        </tr>
+        <tr style="height: 15px;">
+            <td style="width:32%; line-height:1.05; padding:2px 4px;">{{ $reporte->tecnico->name }}</td>
+            <td></td>
+            <td style="width:32%; line-height:1.05; padding:2px 4px;">Ing. José Cruz Ruiz Miron</td>
+            <td></td>
+            <td style="width:32%; line-height:1.05; padding:2px 4px;">{{ $reporte->solicitante }}</td>
+        </tr>
+        <tr style="height: 15px;">
+            <td style="width:32%; line-height:1; padding:1px 4px; font-size:0.9em;">Técnico</td>
+            <td></td>
+            <td style="width:32%; line-height:1; padding:1px 4px; font-size:0.9em;">Coordinador de informática</td>
+            <td></td>
+            <td style="width:32%; line-height:1; padding:1px 4px; font-size:0.9em;">Recibe de conformidad</td>
+        </tr>
+    </table>
+
 </body>
 
 </html>
