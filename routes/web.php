@@ -42,9 +42,7 @@ Route::middleware([
         return view('consultas');
     })->name('consultas');
 
-    Route::get('/dictamen', function () {
-        return view('dictamen');
-    })->name('dictamen');
+    Route::get('/dictamen', [DictamenController::class, 'index'])->name('dictamen');
     Route::post('/dictamenes', [DictamenController::class, 'store'])->name('dictamenes.store');
 
     Route::get('/api/reportes/{id}', [ReporteController::class, 'showBasic'])

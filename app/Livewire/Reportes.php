@@ -4,7 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\{Reporte, Comentario, DepartamentoCongreso, AreasInformatica, Categoria, User, Evento};
+use App\Models\{Reporte, Comentario, DepartamentoCongreso, AreasInformatica, Categoria, User, Evento, Bien, Dictamen};
 use Illuminate\Support\Facades\DB;
 
 use Livewire\Attributes\On;
@@ -28,6 +28,19 @@ class Reportes extends Component
     public ?int $atendidoTecnicoId = null;
 
     public array $atendidoTecnicoIds = [];
+    // Modal Dictamen
+    public bool $showDictamenModal = false;
+    public ?int $dictamenReporteId = null;
+    public string $dictamenInventario = '';
+    public string $dictamenEquipo = '';
+    public string $dictamenMarca = '';
+    public string $dictamenModelo = '';
+    public string $dictamenSerie = '';
+    public string $dictamenDiagnostico = '';
+    public string $dictamenSugerencia = '';
+    public string $dictamenObservaciones = '';
+    public array $bienesSugerencias = [];
+
 
     // --- estado del modal Cerrar ---
     public bool $showCerrarModal = false;
@@ -74,7 +87,7 @@ class Reportes extends Component
     }
 
 
-    protected $listeners = ['abrirModalAtendido', 'cerrarModalAtendido', 'guardarAtendido', 'abrirModalComentario', 'refrescarComentarios', 'abrirModalCerrar', 'abrirModalCancelar'];
+    protected $listeners = ['abrirModalAtendido', 'cerrarModalAtendido', 'guardarAtendido', 'abrirModalComentario', 'refrescarComentarios', 'abrirModalCerrar', 'abrirModalCancelar', 'abrirModalDictamen'];
 
     public function abrirModalAtendido(int $id)
     {
@@ -302,6 +315,129 @@ class Reportes extends Component
         $this->categoriasFiltradas = Categoria::where('area_informatica_id', $areaId)
             ->orderBy('name')
             ->get(['id', 'name']);
+    }
+
+    
+    public function abrirModalDictamen(int $id)
+    {
+        $reporte = Reporte::findOrFail($id);
+
+        $this->dictamenReporteId = $id;
+        $this->dictamenInventario = $reporte->numero_inventario ?? '';
+        $this->dictamenEquipo = '';
+        $this->dictamenMarca = '';
+        $this->dictamenModelo = '';
+        $this->dictamenSerie = '';
+        $this->dictamenDiagnostico = '';
+        $this->dictamenSugerencia = '';
+        $this->dictamenObservaciones = '';
+        $this->bienesSugerencias = [];
+
+        if (!empty($this->dictamenInventario)) {
+            $this->buscarBien($this->dictamenInventario);
+        }
+
+        $this->resetValidation();
+        $this->showDictamenModal = true;
+    }
+
+    public function cerrarModalDictamen()
+    {
+        $this->showDictamenModal = false;
+        $this->dictamenReporteId = null;
+        $this->bienesSugerencias = [];
+    }
+
+    public function updatedDictamenInventario($value)
+    {
+        $this->buscarBien($value);
+    }
+
+    public function buscarBien($value)
+    {
+        $term = trim($value);
+        if (strlen($term) < 2) {
+            $this->bienesSugerencias = [];
+            return;
+        }
+
+        $bien = Bien::where('numero_inventario', $term)
+            ->orWhere('numero_inventario_anterior', $term)
+            ->first();
+
+        if ($bien) {
+            $this->dictamenEquipo = $bien->equipo ?? '';
+            $this->dictamenMarca = $bien->marca ?? '';
+            $this->dictamenModelo = $bien->modelo ?? '';
+            $this->dictamenSerie = $bien->serie ?? '';
+        }
+
+        $this->bienesSugerencias = Bien::query()
+            ->where('numero_inventario', 'like', "%{$term}%")
+            ->orWhere('numero_inventario_anterior', 'like', "%{$term}%")
+            ->orWhere('equipo', 'like', "%{$term}%")
+            ->limit(5)
+            ->get(['id', 'numero_inventario', 'equipo', 'marca', 'modelo', 'serie'])
+            ->toArray();
+    }
+
+    public function seleccionarBien(int $bienId)
+    {
+        $bien = Bien::find($bienId);
+        if ($bien) {
+            $this->dictamenInventario = $bien->numero_inventario;
+            $this->dictamenEquipo = $bien->equipo;
+            $this->dictamenMarca = $bien->marca ?? '';
+            $this->dictamenModelo = $bien->modelo ?? '';
+            $this->dictamenSerie = $bien->serie ?? '';
+        }
+        $this->bienesSugerencias = [];
+    }
+
+    public function guardarDictamen()
+    {
+        $this->validate([
+            'dictamenReporteId'  => 'required|exists:reportes,id',
+            'dictamenInventario' => 'required|string|max:255',
+            'dictamenEquipo'     => 'required|string|max:255',
+            'dictamenMarca'      => 'required|string|max:255',
+            'dictamenModelo'     => 'required|string|max:255',
+            'dictamenSerie'      => 'required|string|max:255',
+            'dictamenDiagnostico'=> 'required|string',
+            'dictamenSugerencia' => 'required|string',
+            'dictamenObservaciones' => 'nullable|string',
+        ], [
+            'dictamenInventario.required' => 'El número de inventario es obligatorio.',
+            'dictamenEquipo.required'     => 'El nombre/tipo de equipo es obligatorio.',
+            'dictamenMarca.required'      => 'La marca es obligatoria.',
+            'dictamenModelo.required'     => 'El modelo es obligatorio.',
+            'dictamenSerie.required'      => 'El número de serie es obligatorio.',
+            'dictamenDiagnostico.required'=> 'El diagnóstico técnico es obligatorio.',
+            'dictamenSugerencia.required' => 'La sugerencia es obligatoria.',
+        ]);
+
+        Dictamen::create([
+            'reporte_id'   => $this->dictamenReporteId,
+            'inventario'   => $this->dictamenInventario,
+            'equipo'       => $this->dictamenEquipo,
+            'marca'        => $this->dictamenMarca,
+            'modelo'       => $this->dictamenModelo,
+            'serie'        => $this->dictamenSerie,
+            'diagnostico'  => $this->dictamenDiagnostico,
+            'sugerencia'   => $this->dictamenSugerencia,
+            'observaciones'=> $this->dictamenObservaciones,
+        ]);
+
+        $reporte = Reporte::findOrFail($this->dictamenReporteId);
+        if ($reporte->estado_id == 1) {
+            $reporte->estado_id = 2; // Atendido
+            $reporte->save();
+        }
+
+        $this->dispatch('refrescarComentarios', id: $reporte->id);
+
+        $this->cerrarModalDictamen();
+        session()->flash('ok', 'Dictamen técnico registrado exitosamente.');
     }
 
     public function render()

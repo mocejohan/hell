@@ -76,11 +76,14 @@
                 </button>
 
 
-                @if ($reporte->estado->name == 'Atendido')
+            @endcan
+
+            @can('cerrarSolicitud')
+                @if ($reporte->estado->name == 'Atendido' || $reporte->dictamenes_count > 0)
                     <button wire:click="cerrar"
-                        class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition">
+                        class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition text-vino-700 font-semibold">
                         <i class="fa-solid fa-folder-closed text-vino-600"></i>
-                        <span>Cerrar</span>
+                        <span>Cerrar Solicitud</span>
                     </button>
                 @endif
             @endcan
@@ -90,6 +93,15 @@
                     class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition">
                     <i class="fa-solid fa-circle-xmark text-red-600"></i>
                     <span>Cancelar</span>
+                </button>
+            @endcan
+
+            
+            @can('dictaminar')
+                <button wire:click="dictaminar"
+                    class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition text-vino-700 font-semibold">
+                    <i class="fa-solid fa-file-contract text-vino-600"></i>
+                    <span>Dictaminar</span>
                 </button>
             @endcan
 
@@ -104,13 +116,21 @@
             
         </div>
         @endif
-        @can('ImprimirDictamen')
-            @if ($reporte->dictamenes_count > 0)
+        
+    @if ($reporte->dictamenes_count > 0)
+        <div class="bg-green-50 border-t border-green-200 px-4 py-2 flex items-center justify-between text-xs text-green-800 font-medium">
+            <span class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-green-600"></i>
+                Dictamen Técnico Registrado
+            </span>
+            @can('ImprimirDictamen')
                 <a href="{{ route('reportes.dictamen.pdf', $reporte->id) }}" target="_blank" rel="noopener"
-                    class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition">
-                    <i class="fa-solid fa-clipboard-check text-gray-600"></i>
-                    <span>Dictamen</span>
+                    class="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>Imprimir PDF</span>
                 </a>
-            @endif
-        @endcan
+            @endcan
+        </div>
+    @endif
+
 </div>

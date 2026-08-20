@@ -340,4 +340,115 @@
             </x-button>
         </x-slot>
     </x-dialog-modal>
+
+
+    {{-- MODAL: Crear Dictamen --}}
+    <x-dialog-modal wire:model="showDictamenModal" wire:key="dictamen-modal" wire:ignore.self maxWidth="2xl">
+        <x-slot name="title">
+            Generar Dictamen Técnico (Reporte #{{ $dictamenReporteId }})
+        </x-slot>
+
+        <x-slot name="content">
+            <div class="space-y-4">
+                <p class="text-xs text-gray-500">
+                    Ingresa el número de inventario para autocompletar la información del equipo o llena los campos manualmente.
+                </p>
+
+                {{-- Inventario con Autocompletado --}}
+                <div class="relative">
+                    <x-label for="dictamenInventario" value="Número de Inventario *" />
+                    <x-input id="dictamenInventario" type="text" class="mt-1 block w-full"
+                        wire:model.live.debounce.300ms="dictamenInventario"
+                        placeholder="Ej. 51100004-000056" />
+                    <x-input-error for="dictamenInventario" class="mt-1" />
+
+                    @if (!empty($bienesSugerencias))
+                        <div class="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                            <div class="p-2 text-xs font-semibold bg-gray-100 border-b text-gray-600">Sugerencias del Inventario:</div>
+                            @foreach ($bienesSugerencias as $b)
+                                <button type="button" wire:click="seleccionarBien({{ $b['id'] }})"
+                                    class="w-full text-left px-3 py-2 text-xs hover:bg-vino-50 border-b last:border-0 flex justify-between items-center transition">
+                                    <div>
+                                        <span class="font-bold text-vino-800">{{ $b['numero_inventario'] }}</span>
+                                        <span class="text-gray-600 font-medium ml-2">{{ $b['equipo'] }}</span>
+                                    </div>
+                                    <span class="text-gray-400 italic">{{ $b['marca'] ?? '' }} {{ $b['modelo'] ?? '' }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Grid Equipo, Marca, Modelo, Serie --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <x-label for="dictamenEquipo" value="Equipo *" />
+                        <x-input id="dictamenEquipo" type="text" class="mt-1 block w-full"
+                            wire:model="dictamenEquipo" placeholder="Ej. COMPUTADORA DE ESCRITORIO" />
+                        <x-input-error for="dictamenEquipo" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <x-label for="dictamenMarca" value="Marca *" />
+                        <x-input id="dictamenMarca" type="text" class="mt-1 block w-full"
+                            wire:model="dictamenMarca" placeholder="Ej. DELL / HP / LENOVO" />
+                        <x-input-error for="dictamenMarca" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <x-label for="dictamenModelo" value="Modelo *" />
+                        <x-input id="dictamenModelo" type="text" class="mt-1 block w-full"
+                            wire:model="dictamenModelo" placeholder="Ej. OPTIPLEX 3020" />
+                        <x-input-error for="dictamenModelo" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <x-label for="dictamenSerie" value="Número de Serie *" />
+                        <x-input id="dictamenSerie" type="text" class="mt-1 block w-full"
+                            wire:model="dictamenSerie" placeholder="Ej. MXL123456" />
+                        <x-input-error for="dictamenSerie" class="mt-1" />
+                    </div>
+                </div>
+
+                {{-- Diagnóstico --}}
+                <div>
+                    <x-label for="dictamenDiagnostico" value="Diagnóstico Técnico *" />
+                    <textarea id="dictamenDiagnostico" wire:model="dictamenDiagnostico" rows="3"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                        placeholder="Describe el estado físico y falla detectada en el equipo..."></textarea>
+                    <x-input-error for="dictamenDiagnostico" class="mt-1" />
+                </div>
+
+                {{-- Sugerencia --}}
+                <div>
+                    <x-label for="dictamenSugerencia" value="Sugerencia / Recomendación *" />
+                    <textarea id="dictamenSugerencia" wire:model="dictamenSugerencia" rows="2"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                        placeholder="Ej. Se sugiere baja del equipo por obsolescencia o reemplazo de disco duro..."></textarea>
+                    <x-input-error for="dictamenSugerencia" class="mt-1" />
+                </div>
+
+                {{-- Observaciones --}}
+                <div>
+                    <x-label for="dictamenObservaciones" value="Observaciones (Opcional)" />
+                    <textarea id="dictamenObservaciones" wire:model="dictamenObservaciones" rows="2"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                        placeholder="Notas adicionales o comentarios de seguimiento..."></textarea>
+                    <x-input-error for="dictamenObservaciones" class="mt-1" />
+                </div>
+            </div>
+        </x-slot>
+
+        <x-slot name="footer">
+            <x-secondary-button wire:click="cerrarModalDictamen" wire:loading.attr="disabled">
+                Cancelar
+            </x-secondary-button>
+
+            <x-button wire:click="guardarDictamen" class="ms-3 bg-vino-700 hover:bg-vino-800" wire:loading.attr="disabled">
+                Guardar Dictamen
+            </x-button>
+        </x-slot>
+    </x-dialog-modal>
+
+
 </div>

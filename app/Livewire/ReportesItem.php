@@ -28,6 +28,12 @@ class ReportesItem extends Component
         $this->dispatch('abrirModalCancelar', id: $this->reporte->id);
     }
 
+    
+    public function dictaminar()
+    {
+        $this->dispatch('abrirModalDictamen', id: $this->reporte->id);
+    }
+
     public function comentar()
     {
         $this->dispatch('abrirModalComentario', id: $this->reporte->id);
