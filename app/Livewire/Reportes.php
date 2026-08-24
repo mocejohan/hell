@@ -6,6 +6,9 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\{Reporte, Comentario, DepartamentoCongreso, AreasInformatica, Categoria, User, Evento, Bien, Dictamen};
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\ReporteEstadoNotificacion;
+use Spatie\Permission\Models\Role;
 
 use Livewire\Attributes\On;
 
@@ -142,6 +145,10 @@ class Reportes extends Component
 
         // refrescar la card del hijo
         $this->dispatch('refrescarComentarios', id: $reporte->id);
+
+        // Notificar a usuarios de Mesa-control
+        $usuariosMesa = User::role('Mesa-control')->get();
+        Notification::send($usuariosMesa, new ReporteEstadoNotificacion($reporte, 'Atendido', auth()->user()->name));
 
         $this->cerrarModalAtendido();
         session()->flash('ok', 'Reporte marcado como Atendido. Categoría y técnicos actualizados.');
@@ -297,6 +304,10 @@ class Reportes extends Component
 
         // refrescar la card del hijo
         $this->dispatch('refrescarComentarios', id: $reporte->id);
+
+        // Notificar a usuarios de Mesa-control
+        $usuariosMesa = User::role('Mesa-control')->get();
+        Notification::send($usuariosMesa, new ReporteEstadoNotificacion($reporte, 'Cancelado', auth()->user()->name));
 
         $this->cerrarModalCancelar();
         session()->flash('ok', 'Reporte cancelado correctamente.');

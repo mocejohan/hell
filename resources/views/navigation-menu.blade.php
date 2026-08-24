@@ -44,6 +44,10 @@
                 </div>
             </div>
             <div class="hidden sm:flex sm:items-center sm:ms-6">
+                {{-- 🔔 Campana de Notificaciones --}}
+                @can('cerrarSolicitud')
+                    <livewire:notificaciones-dropdown />
+                @endcan
                 <!-- Teams Dropdown -->
                 @if (Laravel\Jetstream\Jetstream::hasTeamFeatures())
                     <div class="ms-3 relative">

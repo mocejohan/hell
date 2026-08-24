@@ -15,19 +15,19 @@ class RolSeeder extends Seeder
      */
     public function run(): void
     {
-        $rolMesaControl = Role::create(['name' => 'Mesa-control']);
-        $rolTecnico = Role::create(['name' => 'Tecnico']);
-        // $rolDesarrollo = Role::create(['name' => 'Adm-desarrollador']);
+        \ = Role::create(['name' => 'Mesa-control']);
+        \ = Role::create(['name' => 'Tecnico']);
 
-        // Permission::create(['name' => 'mesa'])->syncRoles([$rolMesaControl, $rolTecnico]);
-        Permission::create(['name' => 'estadisticas'])->syncRoles([$rolMesaControl]);
-        Permission::create(['name' => 'consultas'])->syncRoles([$rolMesaControl]);
-        Permission::create(['name' => 'administrar'])->syncRoles([$rolMesaControl]);
-        Permission::create(['name' => 'NuevoReporte'])->syncRoles([$rolMesaControl]);
-        Permission::create(['name' => 'ListaServicios'])->syncRoles([$rolMesaControl, $rolTecnico]);
-        Permission::create(['name' => 'atendido'])->syncRoles([$rolMesaControl]);
-        Permission::create(['name' => 'cancelar'])->syncRoles([$rolMesaControl]);
-        Permission::create(['name' => 'comentar'])->syncRoles([$rolMesaControl, $rolTecnico]);
-        Permission::create(['name' => 'ImprimirDictamen'])->syncRoles([$rolMesaControl, $rolTecnico]);
+        Permission::create(['name' => 'estadisticas'])->syncRoles([\]);
+        Permission::create(['name' => 'consultas'])->syncRoles([\]);
+        Permission::create(['name' => 'administrar'])->syncRoles([\]);
+        Permission::create(['name' => 'NuevoReporte'])->syncRoles([\]);
+        Permission::create(['name' => 'ListaServicios'])->syncRoles([\, \]);
+        Permission::create(['name' => 'atendido'])->syncRoles([\, \]);
+        Permission::create(['name' => 'cancelar'])->syncRoles([\, \]);
+        Permission::create(['name' => 'comentar'])->syncRoles([\, \]);
+        Permission::create(['name' => 'ImprimirDictamen'])->syncRoles([\, \]);
+        Permission::create(['name' => 'cerrarSolicitud'])->syncRoles([\]);
+        Permission::create(['name' => 'dictaminar'])->syncRoles([\, \]);
     }
 }
