@@ -369,6 +369,7 @@ class Reportes extends Component
         $term = trim($value);
         if (strlen($term) < 2) {
             $this->bienesSugerencias = [];
+            $this->resetValidation('dictamenInventario');
             return;
         }
 
@@ -390,6 +391,12 @@ class Reportes extends Component
             ->limit(5)
             ->get(['id', 'numero_inventario', 'equipo', 'marca', 'modelo', 'serie'])
             ->toArray();
+
+        if (empty($this->bienesSugerencias)) {
+            $this->addError('dictamenInventario', 'No se encontró ningún bien en el inventario con ese número.');
+        } else {
+            $this->resetValidation('dictamenInventario');
+        }
     }
 
     public function seleccionarBien(int $bienId)

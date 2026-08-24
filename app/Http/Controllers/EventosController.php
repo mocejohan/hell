@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Eventos;
+use App\Models\Evento;
 use Illuminate\Http\Request;
 
 class EventosController extends Controller
@@ -34,7 +34,7 @@ class EventosController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Eventos $eventos)
+    public function show(Evento $eventos)
     {
         //
     }
@@ -42,7 +42,7 @@ class EventosController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Eventos $eventos)
+    public function edit(Evento $eventos)
     {
         //
     }
@@ -50,7 +50,7 @@ class EventosController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Eventos $eventos)
+    public function update(Request $request, Evento $eventos)
     {
         //
     }
@@ -58,7 +58,7 @@ class EventosController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Eventos $eventos)
+    public function destroy(Evento $eventos)
     {
         //
     }
