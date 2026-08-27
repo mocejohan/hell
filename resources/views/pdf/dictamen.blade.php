@@ -1,14 +1,14 @@
 <!doctype html>
-<html>
+<html lang="es">
 
 <head>
-    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Dictamen #{{ $reporte->id }}</title>
     <link rel="stylesheet" href="{{ public_path('pdf/dictamen.css') }}" type="text/css">
 </head>
 
 <body>
-    <p class="text-right">Congreso del Estado de Veracruz de Ignacio de la llave</p>
+    <p class="text-right">Congreso del Estado de Veracruz de Ignacio de la Llave</p>
     <p class="text-md text-right">Coordinación de Informática</p>
 
     <table>
@@ -29,7 +29,7 @@
             </td>
         </tr>
     </table>
-    <p class="text-md" style="">Envío para su atención el siguiente dictamen técnico para que se le dé el trámite
+    <p class="text-md">Envío para su atención el siguiente dictamen técnico para que se le dé el trámite
         correspondiente.</p>
 
     <div class="cuerpo">
@@ -50,7 +50,7 @@
                 </div>
                 <div class="row">
                     <div class="col-2" style="width: 100%">
-                        <table style="border:1px solid #818181;" >
+                        <table style="border:1px solid #818181;">
                             <tr>
                                 <td>Equipo</td>
                                 <th colspan="3">{{ $dictamen->equipo }}</th>
@@ -94,9 +94,9 @@
         </div>
     </div>
     <div class="row">
-        <p class="text-md" style="">Sin otro particular, le envío un cordial saludo</p>
+        <p class="text-md">Sin otro particular, le envío un cordial saludo</p>
     </div>
-    <div class="row" class="text-md">
+    <div class="row text-md">
         <div class="col-1 text-md" style="width:6%;"><strong>NOTA:</strong></div>
         <div class="col-2 text-md" style="width:93%;"><strong>ESTE DICTAMEN DEBERÁ ADJUNTARSE A SU SOLICITUD DIRIGIDA A
                 LA DIRECCIÓN DE RECURSOS MATERIALES Y SERVICIOS GENERALES</strong></div>
@@ -111,9 +111,9 @@
             <td style="border-bottom:1px solid #000; padding-top:12px">&nbsp;</td>
         </tr>
         <tr style="height: 15px;">
-            <td style="width:32%; line-height:1.05; padding:2px 4px;">{{ $reporte->tecnico->name }}</td>
+            <td style="width:32%; line-height:1.05; padding:2px 4px;">{{ $reporte->tecnico->name ?? 'Técnico' }}</td>
             <td></td>
-            <td style="width:32%; line-height:1.05; padding:2px 4px;">Ing. José Cruz Ruiz Miron</td>
+            <td style="width:32%; line-height:1.05; padding:2px 4px;">Ing. José Cruz Ruiz Mirón</td>
             <td></td>
             <td style="width:32%; line-height:1.05; padding:2px 4px;">{{ $reporte->solicitante }}</td>
         </tr>
