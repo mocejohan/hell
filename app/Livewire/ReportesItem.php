@@ -28,10 +28,14 @@ class ReportesItem extends Component
         $this->dispatch('abrirModalCancelar', id: $this->reporte->id);
     }
 
-    
     public function dictaminar()
     {
         $this->dispatch('abrirModalDictamen', id: $this->reporte->id);
+    }
+
+    public function historialDictamen()
+    {
+        $this->dispatch('abrirHistorialDictamen', id: $this->reporte->id);
     }
 
     public function comentar()
@@ -39,32 +43,12 @@ class ReportesItem extends Component
         $this->dispatch('abrirModalComentario', id: $this->reporte->id);
     }
 
-    // public function dictamen()
-    // {
-    //     // Seguridad adicional del lado del servidor (opcional si ya restringiste en ruta):
-    //     if (!auth()->user()->can('ImprimirDictamen')) {
-    //         $this->dispatch('toast', type: 'error', msg: 'No tienes permiso para imprimir el dictamen.');
-    //         return;
-    //     }
-
-    //     // Verifica que exista al menos un dictamen
-    //     if ($this->reporte->dictamenes()->doesntExist()) {
-    //         $this->dispatch('toast', type: 'warning', msg: 'Este reporte no tiene dictamen.');
-    //         return;
-    //     }
-
-    //     $url = route('reportes.dictamen.pdf', $this->reporte->id);
-    //     // Dispara un evento para que el front abra la URL en nueva pestaña
-    //     $this->dispatch('abrir-url', url: $url);
-    // }
-
-
     protected $listeners = ['refrescarComentarios'];
 
     public function refrescarComentarios(int $id)
     {
         if ($id === $this->reporte->id) {
-            $this->reporte->refresh()->load(['categoria', 'estado', 'tecnico', 'tecnicos', 'comentarios.user']);
+            $this->reporte->refresh()->load(['categoria', 'estado', 'tecnico', 'tecnicos', 'comentarios.user', 'dictamen']);
         }
     }
 

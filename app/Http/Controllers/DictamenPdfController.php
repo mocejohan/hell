@@ -9,6 +9,10 @@ class DictamenPdfController extends Controller
 {
     public function show(Reporte $reporte)
     {
+        $user = auth()->user();
+        if (!$user->hasAnyRole(['Mesa-control', 'Tecnico']) && !$user->can('ImprimirDictamen')) {
+            abort(403, 'No tienes permiso para consultar este dictamen.');
+        }
         // carga el logo
         // Carga el reporte con su dictamen (ej. el más reciente)
         $reporte->load([

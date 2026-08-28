@@ -52,8 +52,11 @@ Route::middleware([
     //     ->name('reportes.dictamen.pdf')
     //     ->middleware('permission:ImprimirDictamen');
 
-    Route::middleware(['auth', 'permission:ImprimirDictamen'])
+    Route::middleware(['auth'])
     ->get('/reportes/{reporte}/dictamen.pdf', [DictamenPdfController::class, 'show'])
     ->name('reportes.dictamen.pdf');
 
 });
+
+
+

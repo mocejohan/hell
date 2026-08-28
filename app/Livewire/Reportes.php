@@ -4,7 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\{Reporte, Comentario, DepartamentoCongreso, AreasInformatica, Categoria, User, Evento, Bien, Dictamen};
+use App\Models\{Reporte, Comentario, DepartamentoCongreso, AreasInformatica, Categoria, User, Evento, Bien, Dictamen, DictamenVersion};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\ReporteEstadoNotificacion;
@@ -34,6 +34,8 @@ class Reportes extends Component
     // Modal Dictamen
     public bool $showDictamenModal = false;
     public ?int $dictamenReporteId = null;
+    public bool $isEditingDictamen = false;
+    public ?int $dictamenIdEnEdicion = null;
     public string $dictamenInventario = '';
     public string $dictamenEquipo = '';
     public string $dictamenMarca = '';
@@ -42,7 +44,13 @@ class Reportes extends Component
     public string $dictamenDiagnostico = '';
     public string $dictamenSugerencia = '';
     public string $dictamenObservaciones = '';
+    public string $dictamenMotivoCambio = '';
     public array $bienesSugerencias = [];
+
+    // Modal Historial de Versiones Dictamen
+    public bool $showHistorialDictamenModal = false;
+    public $historialDictamenReporte = null;
+    public $historialVersiones = [];
 
 
     // --- estado del modal Cerrar ---
@@ -90,7 +98,7 @@ class Reportes extends Component
     }
 
 
-    protected $listeners = ['abrirModalAtendido', 'cerrarModalAtendido', 'guardarAtendido', 'abrirModalComentario', 'refrescarComentarios', 'abrirModalCerrar', 'abrirModalCancelar', 'abrirModalDictamen'];
+    protected $listeners = ['abrirModalAtendido', 'cerrarModalAtendido', 'guardarAtendido', 'abrirModalComentario', 'refrescarComentarios', 'abrirModalCerrar', 'abrirModalCancelar', 'abrirModalDictamen', 'abrirHistorialDictamen'];
 
     public function abrirModalAtendido(int $id)
     {
@@ -331,23 +339,50 @@ class Reportes extends Component
     
     public function abrirModalDictamen(int $id)
     {
-        $reporte = Reporte::findOrFail($id);
+        $reporte = Reporte::with('dictamen')->findOrFail($id);
 
-        $this->dictamenReporteId = $id;
-        $this->dictamenInventario = $reporte->numero_inventario ?? '';
-        $this->dictamenEquipo = '';
-        $this->dictamenMarca = '';
-        $this->dictamenModelo = '';
-        $this->dictamenSerie = '';
-        $this->dictamenDiagnostico = '';
-        $this->dictamenSugerencia = '';
-        $this->dictamenObservaciones = '';
-        $this->bienesSugerencias = [];
-
-        if (!empty($this->dictamenInventario)) {
-            $this->buscarBien($this->dictamenInventario);
+        // Si el reporte ya fue cerrado o cancelado por la Mesa de Control, no se puede modificar
+        if (in_array($reporte->estado_id, [3, 4]) || !empty($reporte->closed_at)) {
+            $this->dispatch('toast', type: 'warning', msg: 'El dictamen no puede modificarse porque el reporte ya fue cerrado por la Mesa de Control.');
+            return;
         }
 
+        $this->dictamenReporteId = $id;
+        $dictamen = $reporte->dictamen;
+
+        if ($dictamen) {
+            // Modo Edición / Modificación
+            $this->isEditingDictamen = true;
+            $this->dictamenIdEnEdicion = $dictamen->id;
+            $this->dictamenInventario = $dictamen->inventario;
+            $this->dictamenEquipo = $dictamen->equipo;
+            $this->dictamenMarca = $dictamen->marca;
+            $this->dictamenModelo = $dictamen->modelo;
+            $this->dictamenSerie = $dictamen->serie;
+            $this->dictamenDiagnostico = $dictamen->diagnostico;
+            $this->dictamenSugerencia = $dictamen->sugerencia;
+            $this->dictamenObservaciones = $dictamen->observaciones ?? '';
+            $this->dictamenMotivoCambio = '';
+        } else {
+            // Modo Nuevo Dictamen
+            $this->isEditingDictamen = false;
+            $this->dictamenIdEnEdicion = null;
+            $this->dictamenInventario = $reporte->numero_inventario ?? '';
+            $this->dictamenEquipo = '';
+            $this->dictamenMarca = '';
+            $this->dictamenModelo = '';
+            $this->dictamenSerie = '';
+            $this->dictamenDiagnostico = '';
+            $this->dictamenSugerencia = '';
+            $this->dictamenObservaciones = '';
+            $this->dictamenMotivoCambio = '';
+
+            if (!empty($this->dictamenInventario)) {
+                $this->buscarBien($this->dictamenInventario);
+            }
+        }
+
+        $this->bienesSugerencias = [];
         $this->resetValidation();
         $this->showDictamenModal = true;
     }
@@ -356,6 +391,9 @@ class Reportes extends Component
     {
         $this->showDictamenModal = false;
         $this->dictamenReporteId = null;
+        $this->dictamenIdEnEdicion = null;
+        $this->isEditingDictamen = false;
+        $this->dictamenMotivoCambio = '';
         $this->bienesSugerencias = [];
     }
 
@@ -415,15 +453,16 @@ class Reportes extends Component
     public function guardarDictamen()
     {
         $this->validate([
-            'dictamenReporteId'  => 'required|exists:reportes,id',
-            'dictamenInventario' => 'required|string|max:255',
-            'dictamenEquipo'     => 'required|string|max:255',
-            'dictamenMarca'      => 'required|string|max:255',
-            'dictamenModelo'     => 'required|string|max:255',
-            'dictamenSerie'      => 'required|string|max:255',
-            'dictamenDiagnostico'=> 'required|string',
-            'dictamenSugerencia' => 'required|string',
+            'dictamenReporteId'     => 'required|exists:reportes,id',
+            'dictamenInventario'    => 'required|string|max:255',
+            'dictamenEquipo'        => 'required|string|max:255',
+            'dictamenMarca'         => 'required|string|max:255',
+            'dictamenModelo'        => 'required|string|max:255',
+            'dictamenSerie'         => 'required|string|max:255',
+            'dictamenDiagnostico'   => 'required|string',
+            'dictamenSugerencia'    => 'required|string',
             'dictamenObservaciones' => 'nullable|string',
+            'dictamenMotivoCambio'  => 'nullable|string|max:255',
         ], [
             'dictamenInventario.required' => 'El número de inventario es obligatorio.',
             'dictamenEquipo.required'     => 'El nombre/tipo de equipo es obligatorio.',
@@ -434,28 +473,123 @@ class Reportes extends Component
             'dictamenSugerencia.required' => 'La sugerencia es obligatoria.',
         ]);
 
-        Dictamen::create([
-            'reporte_id'   => $this->dictamenReporteId,
-            'inventario'   => $this->dictamenInventario,
-            'equipo'       => $this->dictamenEquipo,
-            'marca'        => $this->dictamenMarca,
-            'modelo'       => $this->dictamenModelo,
-            'serie'        => $this->dictamenSerie,
-            'diagnostico'  => $this->dictamenDiagnostico,
-            'sugerencia'   => $this->dictamenSugerencia,
-            'observaciones'=> $this->dictamenObservaciones,
-        ]);
-
         $reporte = Reporte::findOrFail($this->dictamenReporteId);
-        if ($reporte->estado_id == 1) {
-            $reporte->estado_id = 2; // Atendido
-            $reporte->save();
+
+        // Bloqueo de seguridad: Si la Mesa de Control ya cerró el reporte
+        if (in_array($reporte->estado_id, [3, 4]) || !empty($reporte->closed_at)) {
+            $this->cerrarModalDictamen();
+            $this->dispatch('toast', type: 'error', msg: 'No se puede modificar el dictamen: el reporte fue cerrado por la Mesa de Control.');
+            return;
+        }
+
+        if ($this->isEditingDictamen && $this->dictamenIdEnEdicion) {
+            $dictamen = Dictamen::findOrFail($this->dictamenIdEnEdicion);
+
+            $maxVersion = $dictamen->versiones()->max('version') ?? 0;
+
+            // Si es la primera edición y no existía versión inicial respaldada, la respaldamos
+            if ($maxVersion === 0) {
+                $dictamen->versiones()->create([
+                    'user_id'       => auth()->id(),
+                    'version'       => 1,
+                    'inventario'    => $dictamen->inventario,
+                    'equipo'        => $dictamen->equipo,
+                    'marca'         => $dictamen->marca,
+                    'modelo'        => $dictamen->modelo,
+                    'serie'         => $dictamen->serie,
+                    'diagnostico'   => $dictamen->diagnostico,
+                    'sugerencia'    => $dictamen->sugerencia,
+                    'observaciones' => $dictamen->observaciones,
+                    'motivo_cambio' => 'Versión inicial original',
+                    'created_at'    => $dictamen->created_at,
+                ]);
+                $maxVersion = 1;
+            }
+
+            $nuevaVersion = $maxVersion + 1;
+
+            // Guardar la nueva versión en el historial
+            $dictamen->versiones()->create([
+                'user_id'       => auth()->id(),
+                'version'       => $nuevaVersion,
+                'inventario'    => $this->dictamenInventario,
+                'equipo'        => $this->dictamenEquipo,
+                'marca'         => $this->dictamenMarca,
+                'modelo'        => $this->dictamenModelo,
+                'serie'         => $this->dictamenSerie,
+                'diagnostico'   => $this->dictamenDiagnostico,
+                'sugerencia'    => $this->dictamenSugerencia,
+                'observaciones' => $this->dictamenObservaciones,
+                'motivo_cambio' => $this->dictamenMotivoCambio ?: "Modificación técnica (Versión {$nuevaVersion})",
+            ]);
+
+            // Actualizar el dictamen actual
+            $dictamen->update([
+                'inventario'    => $this->dictamenInventario,
+                'equipo'        => $this->dictamenEquipo,
+                'marca'         => $this->dictamenMarca,
+                'modelo'        => $this->dictamenModelo,
+                'serie'         => $this->dictamenSerie,
+                'diagnostico'   => $this->dictamenDiagnostico,
+                'sugerencia'    => $this->dictamenSugerencia,
+                'observaciones' => $this->dictamenObservaciones,
+            ]);
+
+            session()->flash('ok', "Dictamen técnico actualizado exitosamente (Versión {$nuevaVersion}).");
+        } else {
+            // Creación inicial
+            $dictamen = Dictamen::create([
+                'reporte_id'    => $this->dictamenReporteId,
+                'inventario'    => $this->dictamenInventario,
+                'equipo'        => $this->dictamenEquipo,
+                'marca'         => $this->dictamenMarca,
+                'modelo'        => $this->dictamenModelo,
+                'serie'         => $this->dictamenSerie,
+                'diagnostico'   => $this->dictamenDiagnostico,
+                'sugerencia'    => $this->dictamenSugerencia,
+                'observaciones' => $this->dictamenObservaciones,
+            ]);
+
+            // Registrar Versión 1 en el historial
+            $dictamen->versiones()->create([
+                'user_id'       => auth()->id(),
+                'version'       => 1,
+                'inventario'    => $this->dictamenInventario,
+                'equipo'        => $this->dictamenEquipo,
+                'marca'         => $this->dictamenMarca,
+                'modelo'        => $this->dictamenModelo,
+                'serie'         => $this->dictamenSerie,
+                'diagnostico'   => $this->dictamenDiagnostico,
+                'sugerencia'    => $this->dictamenSugerencia,
+                'observaciones' => $this->dictamenObservaciones,
+                'motivo_cambio' => 'Creación y registro inicial',
+            ]);
+
+            if ($reporte->estado_id == 1) {
+                $reporte->estado_id = 2; // Atendido
+                $reporte->save();
+            }
+
+            session()->flash('ok', 'Dictamen técnico registrado exitosamente (Versión 1).');
         }
 
         $this->dispatch('refrescarComentarios', id: $reporte->id);
-
         $this->cerrarModalDictamen();
-        session()->flash('ok', 'Dictamen técnico registrado exitosamente.');
+    }
+
+    public function abrirHistorialDictamen(int $id)
+    {
+        $reporte = Reporte::with(['dictamen.versiones.user'])->findOrFail($id);
+        $this->historialDictamenReporte = $reporte;
+        $this->historialVersiones = $reporte->dictamen?->versiones ?? collect();
+        $this->showHistorialDictamenModal = true;
+    }
+
+    public function cerrarHistorialDictamen()
+    {
+        $this->showHistorialDictamenModal = false;
+        $this->historialDictamenReporte = null;
+        $this->historialVersiones = [];
     }
 
     public function render()

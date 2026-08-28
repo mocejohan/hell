@@ -342,17 +342,34 @@
     </x-dialog-modal>
 
 
-    {{-- MODAL: Crear Dictamen --}}
+    {{-- MODAL: Crear / Modificar Dictamen --}}
     <x-dialog-modal wire:model="showDictamenModal" wire:key="dictamen-modal" wire:ignore.self maxWidth="2xl">
         <x-slot name="title">
-            Generar Dictamen Técnico (Reporte #{{ $dictamenReporteId }})
+            @if ($isEditingDictamen)
+                <span class="text-amber-800 flex items-center gap-2" style="color: #92400e;">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    Modificar Dictamen Técnico (Reporte #{{ $dictamenReporteId }})
+                </span>
+            @else
+                <span class="text-vino-800 flex items-center gap-2">
+                    <i class="fa-solid fa-file-contract"></i>
+                    Generar Dictamen Técnico (Reporte #{{ $dictamenReporteId }})
+                </span>
+            @endif
         </x-slot>
 
         <x-slot name="content">
             <div class="space-y-4">
-                <p class="text-xs text-gray-500">
-                    Ingresa el número de inventario para autocompletar la información del equipo o llena los campos manualmente.
-                </p>
+                @if ($isEditingDictamen)
+                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-900" style="background-color: #fffbeb; border-color: #fde68a; color: #78350f;">
+                        <strong><i class="fa-solid fa-circle-info"></i> Modo de Modificación:</strong>
+                        Los cambios guardados generarán una nueva versión en el historial. Recuerda que solo puedes modificarlo mientras el reporte no haya sido cerrado por la Mesa de Control.
+                    </div>
+                @else
+                    <p class="text-xs text-gray-500">
+                        Ingresa el número de inventario para autocompletar la información del equipo o llena los campos manualmente.
+                    </p>
+                @endif
 
                 {{-- Inventario con Autocompletado --}}
                 <div class="relative">
@@ -436,6 +453,16 @@
                         placeholder="Notas adicionales o comentarios de seguimiento..."></textarea>
                     <x-input-error for="dictamenObservaciones" class="mt-1" />
                 </div>
+
+                {{-- Motivo de la Modificación (si está editando) --}}
+                @if ($isEditingDictamen)
+                    <div>
+                        <x-label for="dictamenMotivoCambio" value="Motivo de la Modificación / Notas de Versión (Opcional)" />
+                        <x-input id="dictamenMotivoCambio" type="text" class="mt-1 block w-full text-sm"
+                            wire:model="dictamenMotivoCambio" placeholder="Ej. Corrección de modelo / Actualización de pruebas de hardware..." />
+                        <x-input-error for="dictamenMotivoCambio" class="mt-1" />
+                    </div>
+                @endif
             </div>
         </x-slot>
 
@@ -444,11 +471,114 @@
                 Cancelar
             </x-secondary-button>
 
-            <x-button wire:click="guardarDictamen" class="ms-3 bg-vino-700 hover:bg-vino-800" wire:loading.attr="disabled">
-                Guardar Dictamen
+            <x-button wire:click="guardarDictamen" class="ms-3 {{ $isEditingDictamen ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-vino-700 hover:bg-vino-800 text-white' }}" style="{{ $isEditingDictamen ? 'background-color: #d97706; color: #ffffff !important;' : 'background-color: #7f1d1d; color: #ffffff !important;' }}" wire:loading.attr="disabled">
+                {{ $isEditingDictamen ? 'Actualizar Dictamen' : 'Guardar Dictamen' }}
             </x-button>
         </x-slot>
     </x-dialog-modal>
 
+
+    {{-- MODAL: Historial de Versiones del Dictamen --}}
+    <x-dialog-modal wire:model="showHistorialDictamenModal" wire:key="historial-dictamen-modal" wire:ignore.self maxWidth="2xl">
+        <x-slot name="title">
+            <div class="flex items-center justify-between w-full pr-6">
+                <span class="flex items-center gap-2 text-vino-900 font-bold text-base">
+                    <i class="fa-solid fa-clock-rotate-left text-vino-700"></i>
+                    Historial de Versiones del Dictamen (Reporte #{{ $historialDictamenReporte?->id }})
+                </span>
+                @if ($historialDictamenReporte && (in_array($historialDictamenReporte->estado_id, [3, 4]) || !empty($historialDictamenReporte->closed_at)))
+                    <span class="text-xs bg-gray-200 text-gray-700 font-normal px-2.5 py-1 rounded">
+                        <i class="fa-solid fa-lock"></i> Cerrado por Mesa de Control
+                    </span>
+                @endif
+            </div>
+        </x-slot>
+
+        <x-slot name="content">
+            <div class="space-y-4 max-h-[65vh] overflow-y-auto pr-2">
+                @if (!empty($historialVersiones) && count($historialVersiones) > 0)
+                    <div class="relative border-l-2 border-vino-300 ml-4 space-y-6">
+                        @foreach ($historialVersiones as $index => $v)
+                            <div class="relative pl-6">
+                                {{-- Indicador de timeline --}}
+                                <div class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full {{ $index === 0 ? 'bg-vino-700 ring-4 ring-vino-100' : 'bg-gray-400' }}"></div>
+
+                                <div class="bg-white p-4 rounded-lg border {{ $index === 0 ? 'border-vino-400 shadow-sm' : 'border-gray-200' }}">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-2 mb-3">
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-2 py-0.5 rounded text-xs font-bold {{ $index === 0 ? 'bg-vino-700 text-white' : 'bg-gray-100 text-gray-700' }}">
+                                                Versión {{ $v->version }} {{ $index === 0 ? '(Actual)' : '' }}
+                                            </span>
+                                            <span class="text-xs text-gray-600 font-medium">
+                                                <i class="fa-regular fa-user text-gray-400"></i> {{ $v->user->name ?? 'Técnico' }}
+                                            </span>
+                                        </div>
+                                        <span class="text-xs text-gray-500">
+                                            <i class="fa-regular fa-calendar text-gray-400"></i> {{ $v->created_at->format('d/m/Y H:i') }}
+                                        </span>
+                                    </div>
+
+                                    @if ($v->motivo_cambio)
+                                        <div class="mb-3 p-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-700" style="background-color: #f8fafc; border-color: #e2e8f0; color: #334155;">
+                                            <strong>Nota de versión:</strong> {{ $v->motivo_cambio }}
+                                        </div>
+                                    @endif
+
+                                    {{-- Ficha del equipo en esta versión --}}
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs bg-gray-50 p-2.5 rounded border border-gray-200 mb-3">
+                                        <div>
+                                            <span class="text-gray-500 block text-[11px]">Inventario:</span>
+                                            <span class="font-semibold text-gray-800">{{ $v->inventario }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500 block text-[11px]">Equipo:</span>
+                                            <span class="font-semibold text-gray-800">{{ $v->equipo }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500 block text-[11px]">Marca / Modelo:</span>
+                                            <span class="font-semibold text-gray-800">{{ $v->marca }} {{ $v->modelo }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500 block text-[11px]">Serie:</span>
+                                            <span class="font-semibold text-gray-800">{{ $v->serie }}</span>
+                                        </div>
+                                    </div>
+
+                                    {{-- Diagnóstico y Sugerencia --}}
+                                    <div class="space-y-2 text-xs text-gray-700">
+                                        <div>
+                                            <span class="font-semibold text-gray-800 block">Diagnóstico:</span>
+                                            <p class="mt-0.5 whitespace-pre-line text-gray-600 bg-white p-2 rounded border border-gray-100">{{ $v->diagnostico }}</p>
+                                        </div>
+                                        <div>
+                                            <span class="font-semibold text-gray-800 block">Sugerencia:</span>
+                                            <p class="mt-0.5 whitespace-pre-line text-gray-600 bg-white p-2 rounded border border-gray-100">{{ $v->sugerencia }}</p>
+                                        </div>
+                                        @if ($v->observaciones)
+                                            <div>
+                                                <span class="font-semibold text-gray-800 block">Observaciones:</span>
+                                                <p class="mt-0.5 whitespace-pre-line text-gray-600 bg-white p-2 rounded border border-gray-100">{{ $v->observaciones }}</p>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fa-solid fa-clock-rotate-left text-3xl text-gray-300 mb-2"></i>
+                        <p class="text-sm">No hay versiones registradas aún para este dictamen.</p>
+                    </div>
+                @endif
+            </div>
+        </x-slot>
+
+        <x-slot name="footer">
+            <x-secondary-button wire:click="cerrarHistorialDictamen">
+                Cerrar
+            </x-secondary-button>
+        </x-slot>
+    </x-dialog-modal>
 
 </div>

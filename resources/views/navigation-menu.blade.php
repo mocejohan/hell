@@ -29,11 +29,11 @@
                             Consultas
                         </x-nav-link>
                     @endcan
-                    @can('dictaminar')
+                    @if(auth()->user()->hasAnyRole(['Mesa-control', 'Tecnico']) || auth()->user()->can('dictaminar'))
                         <x-nav-link href="{{ route('dictamen') }}" :active="request()->routeIs('dictamen')">
                             Dictamen
                         </x-nav-link>
-                    @endcan
+                    @endif
                     @can('administrar')
                         <x-nav-link href="{{ url('/admin') }}" 
                             target="_blank" rel="noopener noreferrer"
@@ -45,9 +45,9 @@
             </div>
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 {{-- 🔔 Campana de Notificaciones --}}
-                @can('cerrarSolicitud')
+                @if(auth()->user()->hasRole('Mesa-control') || auth()->user()->can('cerrarSolicitud'))
                     <livewire:notificaciones-dropdown />
-                @endcan
+                @endif
                 <!-- Teams Dropdown -->
                 @if (Laravel\Jetstream\Jetstream::hasTeamFeatures())
                     <div class="ms-3 relative">
@@ -180,6 +180,11 @@
             <x-responsive-nav-link href="{{ route('consultas') }}" :active="request()->routeIs('consultas')">
                 Consultas
             </x-responsive-nav-link>
+            @if(auth()->user()->hasAnyRole(['Mesa-control', 'Tecnico']) || auth()->user()->can('dictaminar'))
+                <x-responsive-nav-link href="{{ route('dictamen') }}" :active="request()->routeIs('dictamen')">
+                    Dictamen
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->

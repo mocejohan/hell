@@ -19,7 +19,6 @@
             @endif
         </div>
         <div class="flex justify-between w-full text-xs text-gray-500">
-            {{-- <span>Téc: <strong>{{ $reporte->tecnico->name }} </strong></span> --}}
             <span>Téc: <strong>{{ $reporte->tecnicos->pluck('name')->join(', ') ?: 'Sin técnico' }} </strong></span>
         </div>
     </div>
@@ -53,7 +52,6 @@
                             <div class="flex items-center gap-2">
                                 <span
                                     class="font-semibold text-sm text-gray-800">{{ $c->user->name ?? 'Usuario' }}</span>
-                                {{-- <span class="text-xs text-gray-500">{{ $c->created_at->diffForHumans() }}</span> --}}
                             </div>
                             <p class="text-sm text-gray-700">
                                 {{ $c->comentario }}
@@ -65,7 +63,7 @@
         </div>
     @endif
 
-    {{-- Footer --}}
+    {{-- Footer Acciones --}}
     @if ($mostrarFooter)
         <div class="px-0 bg-gray-50 border-t flex divide-x text-sm text-gray-600">
             @can('atendido')
@@ -74,19 +72,17 @@
                     <i class="fa-solid fa-check text-green-600"></i>
                     <span>Atendido</span>
                 </button>
-
-
             @endcan
 
-            @can('cerrarSolicitud')
-                @if ($reporte->estado->name == 'Atendido' || $reporte->dictamenes_count > 0)
+            @if(auth()->user()->hasRole('Mesa-control') || auth()->user()->can('cerrarSolicitud'))
+                @if ($reporte->estado->name == 'Atendido' || $reporte->dictamenes_count > 0 || $reporte->dictamen)
                     <button wire:click="cerrar"
                         class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition text-vino-700 font-semibold">
                         <i class="fa-solid fa-folder-closed text-vino-600"></i>
                         <span>Cerrar Solicitud</span>
                     </button>
                 @endif
-            @endcan
+            @endif
 
             @can('cancelar')
                 <button wire:click="cancelar"
@@ -96,13 +92,14 @@
                 </button>
             @endcan
 
-            
-            @can('dictaminar')
-                <button wire:click="dictaminar"
-                    class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition text-vino-700 font-semibold">
-                    <i class="fa-solid fa-file-contract text-vino-600"></i>
-                    <span>Dictaminar</span>
-                </button>
+            @if(auth()->user()->hasAnyRole(['Mesa-control', 'Tecnico']) || auth()->user()->can('dictaminar'))
+                @if ($reporte->dictamenes_count == 0 && !in_array($reporte->estado_id, [3, 4]) && empty($reporte->closed_at))
+                    <button wire:click="dictaminar"
+                        class="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 transition text-vino-700 font-semibold">
+                        <i class="fa-solid fa-file-contract text-vino-600"></i>
+                        <span>Dictaminar</span>
+                    </button>
+                @endif
             @endcan
 
             @can('comentar')
@@ -112,24 +109,57 @@
                     <span>Comentar</span>
                 </button>
             @endcan
-
-            
         </div>
-        @endif
+    @endif
         
-    @if ($reporte->dictamenes_count > 0)
-        <div class="bg-green-50 border-t border-green-200 px-4 py-2 flex items-center justify-between text-xs text-green-800 font-medium">
-            <span class="flex items-center gap-2">
-                <i class="fa-solid fa-circle-check text-green-600"></i>
-                Dictamen Técnico Registrado
-            </span>
-            @can('ImprimirDictamen')
-                <a href="{{ route('reportes.dictamen.pdf', $reporte->id) }}" target="_blank" rel="noopener"
-                    class="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition">
-                    <i class="fa-solid fa-file-pdf"></i>
-                    <span>Imprimir PDF</span>
-                </a>
-            @endcan
+    {{-- Sección de Dictamen Técnico Registrado --}}
+    @if ($reporte->dictamenes_count > 0 || $reporte->dictamen)
+        <div class="bg-green-50 border-t border-green-200 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-green-900 font-medium"
+             style="background-color: #f0fdf4; border-top: 1px solid #bbf7d0; color: #14532d;">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-green-600 text-sm" style="color: #16a34a;"></i>
+                <span class="font-semibold" style="color: #15803d;">Dictamen Técnico Registrado</span>
+                @if (in_array($reporte->estado_id, [3, 4]) || !empty($reporte->closed_at))
+                    <span class="inline-flex items-center gap-1 bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[11px] font-normal" title="El reporte fue cerrado por la Mesa de Control, no permite más modificaciones.">
+                        <i class="fa-solid fa-lock text-gray-500"></i> Cerrado por Mesa de Control
+                    </span>
+                @endif
+            </div>
+
+            <div class="flex items-center gap-2">
+                {{-- Modificar Dictamen (Solo si el reporte está abierto / no cerrado) --}}
+                @if(auth()->user()->hasAnyRole(['Mesa-control', 'Tecnico']) || auth()->user()->can('dictaminar'))
+                    @if (!in_array($reporte->estado_id, [3, 4]) && empty($reporte->closed_at))
+                        <button wire:click="dictaminar"
+                            class="inline-flex items-center gap-1 text-white px-2.5 py-1 rounded text-xs font-semibold shadow-sm transition hover:opacity-90"
+                            style="background-color: #d97706; color: #ffffff !important;"
+                            title="Modificar dictamen técnico">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <span>Modificar</span>
+                        </button>
+                    @endif
+                @endif
+
+                {{-- Historial de Versiones --}}
+                <button wire:click="historialDictamen"
+                    class="inline-flex items-center gap-1 text-white px-2.5 py-1 rounded text-xs font-semibold shadow-sm transition hover:opacity-90"
+                    style="background-color: #475569; color: #ffffff !important;"
+                    title="Ver historial de modificaciones y versiones">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Historial</span>
+                </button>
+
+                {{-- Imprimir PDF --}}
+                @if(auth()->user()->hasAnyRole(['Mesa-control', 'Tecnico']) || auth()->user()->can('ImprimirDictamen'))
+                    <a href="{{ route('reportes.dictamen.pdf', $reporte->id) }}" target="_blank" rel="noopener"
+                        class="inline-flex items-center gap-1 text-white px-2.5 py-1 rounded text-xs font-semibold shadow-sm transition hover:opacity-90"
+                        style="background-color: #047857; color: #ffffff !important;"
+                        title="Descargar o imprimir PDF oficial">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span>Imprimir PDF</span>
+                    </a>
+                @endif
+            </div>
         </div>
     @endif
 
