@@ -13,6 +13,7 @@ class Dictamen extends Model
 
     protected $fillable = [
         'reporte_id',
+        'bien_id',
         'inventario',
         'equipo',
         'marca',
@@ -26,6 +27,11 @@ class Dictamen extends Model
     public function reporte()
     {
         return $this->belongsTo(Reporte::class, 'reporte_id');
+    }
+
+    public function bien()
+    {
+        return $this->belongsTo(Bien::class, 'bien_id');
     }
 
     public function versiones()

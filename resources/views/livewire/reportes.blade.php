@@ -384,10 +384,17 @@
                             <div class="p-2 text-xs font-semibold bg-gray-100 border-b text-gray-600">Sugerencias del Inventario:</div>
                             @foreach ($bienesSugerencias as $b)
                                 <button type="button" wire:click="seleccionarBien({{ $b['id'] }})"
-                                    class="w-full text-left px-3 py-2 text-xs hover:bg-vino-50 border-b last:border-0 flex justify-between items-center transition">
-                                    <div>
+                                    class="w-full text-left px-3 py-2 text-xs hover:bg-vino-50 border-b last:border-0 flex justify-between items-center transition {{ !empty($b['tiene_dictamen_activo']) ? 'bg-red-50' : '' }}"
+                                    style="{{ !empty($b['tiene_dictamen_activo']) ? 'background-color: #fef2f2;' : '' }}">
+                                    <div class="flex items-center gap-2">
                                         <span class="font-bold text-vino-800">{{ $b['numero_inventario'] }}</span>
-                                        <span class="text-gray-600 font-medium ml-2">{{ $b['equipo'] }}</span>
+                                        <span class="text-gray-600 font-medium">{{ $b['equipo'] }}</span>
+                                        @if (!empty($b['tiene_dictamen_activo']))
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-white"
+                                                  style="background-color: #dc2626; font-size: 10px;">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Dictamen #{{ $b['dictamen_reporte_id'] }}
+                                            </span>
+                                        @endif
                                     </div>
                                     <span class="text-gray-400 italic">{{ $b['marca'] ?? '' }} {{ $b['modelo'] ?? '' }}</span>
                                 </button>
@@ -395,6 +402,50 @@
                         </div>
                     @endif
                 </div>
+
+                {{-- Advertencia: Bien con dictamen activo --}}
+                @if ($bienDictamenWarning)
+                    <div class="mt-2 p-3 rounded-md text-xs border flex items-start gap-2"
+                         style="background-color: #fef2f2; border-color: #fca5a5; color: #991b1b;">
+                        <i class="fa-solid fa-triangle-exclamation mt-0.5" style="color: #dc2626;"></i>
+                        <div>
+                            <strong>Advertencia:</strong> {{ $bienDictamenWarning }}
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Historial de dictámenes previos del bien --}}
+                @if (!empty($bienDictamenesHistorial))
+                    <div class="mt-2 p-3 rounded-md text-xs border"
+                         style="background-color: #fffbeb; border-color: #fde68a; color: #78350f;">
+                        <div class="flex items-center gap-2 mb-2 font-bold">
+                            <i class="fa-solid fa-clock-rotate-left" style="color: #d97706;"></i>
+                            Dictámenes previos de este bien ({{ count($bienDictamenesHistorial) }}):
+                        </div>
+                        <div class="space-y-1.5 max-h-32 overflow-y-auto">
+                            @foreach ($bienDictamenesHistorial as $hist)
+                                <div class="flex items-center justify-between p-2 rounded border"
+                                     style="background-color: #ffffff; border-color: #e5e7eb;">
+                                    <div class="flex items-center gap-2">
+                                        @if ($hist['es_activo'])
+                                            <span class="inline-block w-2 h-2 rounded-full" style="background-color: #16a34a;"></span>
+                                        @else
+                                            <span class="inline-block w-2 h-2 rounded-full" style="background-color: #9ca3af;"></span>
+                                        @endif
+                                        <span class="font-semibold" style="color: #1f2937;">Reporte #{{ $hist['reporte_id'] }}</span>
+                                        <span style="color: #6b7280;">{{ $hist['fecha'] }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                                              style="{{ $hist['es_activo'] ? 'background-color: #dcfce7; color: #166534;' : 'background-color: #f3f4f6; color: #6b7280;' }}">
+                                            {{ $hist['estado_reporte'] }}
+                                        </span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
                 {{-- Grid Equipo, Marca, Modelo, Serie --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -46,6 +46,9 @@ class Reportes extends Component
     public string $dictamenObservaciones = '';
     public string $dictamenMotivoCambio = '';
     public array $bienesSugerencias = [];
+    public ?int $selectedBienId = null;
+    public ?string $bienDictamenWarning = null;
+    public array $bienDictamenesHistorial = [];
 
     // Modal Historial de Versiones Dictamen
     public bool $showHistorialDictamenModal = false;
@@ -363,6 +366,7 @@ class Reportes extends Component
             $this->dictamenSugerencia = $dictamen->sugerencia;
             $this->dictamenObservaciones = $dictamen->observaciones ?? '';
             $this->dictamenMotivoCambio = '';
+            $this->selectedBienId = $dictamen->bien_id;
         } else {
             // Modo Nuevo Dictamen
             $this->isEditingDictamen = false;
@@ -395,6 +399,9 @@ class Reportes extends Component
         $this->isEditingDictamen = false;
         $this->dictamenMotivoCambio = '';
         $this->bienesSugerencias = [];
+        $this->selectedBienId = null;
+        $this->bienDictamenWarning = null;
+        $this->bienDictamenesHistorial = [];
     }
 
     public function updatedDictamenInventario($value)
@@ -407,6 +414,9 @@ class Reportes extends Component
         $term = trim($value);
         if (strlen($term) < 2) {
             $this->bienesSugerencias = [];
+            $this->selectedBienId = null;
+            $this->bienDictamenWarning = null;
+            $this->bienDictamenesHistorial = [];
             $this->resetValidation('dictamenInventario');
             return;
         }
@@ -420,6 +430,14 @@ class Reportes extends Component
             $this->dictamenMarca = $bien->marca ?? '';
             $this->dictamenModelo = $bien->modelo ?? '';
             $this->dictamenSerie = $bien->serie ?? '';
+            $this->selectedBienId = $bien->id;
+
+            // Verificar dictámenes existentes para este bien
+            $this->verificarDictamenesDelBien($bien);
+        } else {
+            $this->selectedBienId = null;
+            $this->bienDictamenWarning = null;
+            $this->bienDictamenesHistorial = [];
         }
 
         $this->bienesSugerencias = Bien::query()
@@ -429,6 +447,15 @@ class Reportes extends Component
             ->limit(5)
             ->get(['id', 'numero_inventario', 'equipo', 'marca', 'modelo', 'serie'])
             ->toArray();
+
+        // Marcar cuáles bienes de las sugerencias ya tienen dictamen activo
+        foreach ($this->bienesSugerencias as &$sug) {
+            $bienSug = Bien::find($sug['id']);
+            $dictActivo = $bienSug ? $bienSug->tieneDictamenActivo($this->dictamenReporteId) : null;
+            $sug['tiene_dictamen_activo'] = $dictActivo ? true : false;
+            $sug['dictamen_reporte_id'] = $dictActivo ? $dictActivo->reporte_id : null;
+        }
+        unset($sug);
 
         if (empty($this->bienesSugerencias)) {
             $this->addError('dictamenInventario', 'No se encontró ningún bien en el inventario con ese número.');
@@ -446,8 +473,47 @@ class Reportes extends Component
             $this->dictamenMarca = $bien->marca ?? '';
             $this->dictamenModelo = $bien->modelo ?? '';
             $this->dictamenSerie = $bien->serie ?? '';
+            $this->selectedBienId = $bien->id;
+
+            // Verificar dictámenes existentes para este bien
+            $this->verificarDictamenesDelBien($bien);
         }
         $this->bienesSugerencias = [];
+    }
+
+    /**
+     * Verifica si un bien ya tiene dictámenes y genera advertencia + historial.
+     */
+    private function verificarDictamenesDelBien(Bien $bien): void
+    {
+        $this->bienDictamenWarning = null;
+        $this->bienDictamenesHistorial = [];
+
+        // Buscar dictamen activo (excluyendo el reporte actual si estamos editando)
+        $dictamenActivo = $bien->tieneDictamenActivo($this->dictamenReporteId);
+
+        if ($dictamenActivo) {
+            $reporteNum = $dictamenActivo->reporte_id;
+            $fecha = $dictamenActivo->created_at->format('d/m/Y H:i');
+            $this->bienDictamenWarning = "Este bien ya tiene un dictamen activo registrado en el Reporte #{$reporteNum} (generado el {$fecha}). Puedes continuar, pero revisa si es necesario generar otro dictamen para el mismo equipo.";
+        }
+
+        // Cargar historial completo de dictámenes del bien
+        $historial = $bien->historialDictamenes()->get();
+        if ($historial->isNotEmpty()) {
+            $this->bienDictamenesHistorial = $historial->map(function ($d) {
+                return [
+                    'id' => $d->id,
+                    'reporte_id' => $d->reporte_id,
+                    'inventario' => $d->inventario,
+                    'equipo' => $d->equipo,
+                    'diagnostico' => \Illuminate\Support\Str::limit($d->diagnostico, 80),
+                    'fecha' => $d->created_at->format('d/m/Y H:i'),
+                    'estado_reporte' => $d->reporte?->estado?->name ?? 'Desconocido',
+                    'es_activo' => $d->reporte && !in_array($d->reporte->estado_id, [3, 4]),
+                ];
+            })->toArray();
+        }
     }
 
     public function guardarDictamen()
@@ -525,6 +591,7 @@ class Reportes extends Component
 
             // Actualizar el dictamen actual
             $dictamen->update([
+                'bien_id'       => $this->selectedBienId,
                 'inventario'    => $this->dictamenInventario,
                 'equipo'        => $this->dictamenEquipo,
                 'marca'         => $this->dictamenMarca,
@@ -540,6 +607,7 @@ class Reportes extends Component
             // Creación inicial
             $dictamen = Dictamen::create([
                 'reporte_id'    => $this->dictamenReporteId,
+                'bien_id'       => $this->selectedBienId,
                 'inventario'    => $this->dictamenInventario,
                 'equipo'        => $this->dictamenEquipo,
                 'marca'         => $this->dictamenMarca,
