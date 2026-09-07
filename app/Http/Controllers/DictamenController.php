@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Reporte;
 use App\Models\Dictamen;
+use App\Services\DictamenPdfService;
 
 class DictamenController extends Controller
 {
@@ -84,16 +85,21 @@ class DictamenController extends Controller
 
         $validated = $request->validate($rules, $messages, $attributes);
 
-        Dictamen::create($validated);
+        $dictamen = Dictamen::create($validated);
 
         $reporte = Reporte::find($request->reporte_id);
-        if ($reporte && $reporte->estado_id == 1) {
-            $reporte->estado_id = 2; // Atendido
-            $reporte->save();
+        if ($reporte) {
+            if ($reporte->estado_id == 1) {
+                $reporte->estado_id = 2; // Atendido
+                $reporte->save();
+            }
+
+            // Guardar físicamente el PDF en disco
+            DictamenPdfService::guardarEnDisco($reporte, $dictamen);
         }
 
         return redirect()
             ->route('dictamen')
-            ->with('ok', 'Dictamen registrado correctamente.');
+            ->with('ok', 'Dictamen registrado y archivado en PDF correctamente.');
     }
 }

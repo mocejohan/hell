@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Reporte;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\DictamenPdfService;
 
 class DictamenPdfController extends Controller
 {
@@ -13,30 +13,27 @@ class DictamenPdfController extends Controller
         if (!$user->hasAnyRole(['Mesa-control', 'Tecnico']) && !$user->can('ImprimirDictamen')) {
             abort(403, 'No tienes permiso para consultar este dictamen.');
         }
-        // carga el logo
-        // Carga el reporte con su dictamen (ej. el más reciente)
-        $reporte->load([
-            'dictamenes' => fn($q) => $q->latest(), // o filtra como necesites
+
+        $reporte->loadMissing([
+            'dictamenes' => fn($q) => $q->latest(),
             'categoria', 'estado', 'tecnico', 'tecnicos',
-            'departamento', 'area', // si tienes estas relaciones
+            'departamento', 'area',
         ]);
 
         $dictamen = $reporte->dictamenes->first();
         if (!$dictamen) {
-            // Sin dictamen → 404 o redirige con mensaje
             abort(404, 'No existe dictamen para este reporte.');
         }
 
-        $pdf = Pdf::loadView('pdf.dictamen', [
-                'reporte'  => $reporte,
-                'dictamen' => $dictamen,
-            ])
-            ->setPaper('letter'); // 'a4', 'letter', orientación 'portrait'/'landscape' si quieres
+        $pdf = DictamenPdfService::generarPdf($reporte, $dictamen);
+        if (!$pdf) {
+            abort(404, 'No se pudo generar el documento PDF del dictamen.');
+        }
+
+        // Guarda una copia física actualizada en storage/app/public/dictamenes/
+        DictamenPdfService::guardarEnDisco($reporte, $dictamen);
 
         // Mostrar en el navegador
         return $pdf->stream("dictamen-reporte-{$reporte->id}.pdf");
-
-        // Si prefieres descargar:
-        // return $pdf->download("dictamen-reporte-{$reporte->id}.pdf");
     }
 }

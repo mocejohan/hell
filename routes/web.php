@@ -17,7 +17,6 @@ use App\Http\Controllers\DictamenPdfController;
 */
 
 Route::get('/', function () {
-    // return view('dashboard');
     return view('mesadecontrol');
 })->middleware('auth');
 
@@ -27,7 +26,6 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('/dashboard', function () {
-        // return view('dashboard');
         return view('mesadecontrol');
     })->name('dashboard');
 
@@ -38,9 +36,14 @@ Route::middleware([
     Route::get('/estadisticas', function () {
         return view('estadisticas');
     })->name('estadisticas');
+
     Route::get('/consultas', function () {
         return view('consultas');
     })->name('consultas');
+
+    Route::get('/bienes', function () {
+        return view('bienes');
+    })->name('bienes');
 
     Route::get('/dictamen', [DictamenController::class, 'index'])->name('dictamen');
     Route::post('/dictamenes', [DictamenController::class, 'store'])->name('dictamenes.store');
@@ -48,16 +51,7 @@ Route::middleware([
     Route::get('/api/reportes/{id}', [ReporteController::class, 'showBasic'])
         ->name('reportes.lookup');
 
-    // Route::get('/reportes/{reporte}/dictamen.pdf', [DictamenPdfController::class, 'show'])
-    //     ->name('reportes.dictamen.pdf')
-    //     ->middleware('permission:ImprimirDictamen');
-
     Route::middleware(['auth'])
-    ->get('/reportes/{reporte}/dictamen.pdf', [DictamenPdfController::class, 'show'])
-    ->name('reportes.dictamen.pdf');
-
+        ->get('/reportes/{reporte}/dictamen.pdf', [DictamenPdfController::class, 'show'])
+        ->name('reportes.dictamen.pdf');
 });
-
-
-
-

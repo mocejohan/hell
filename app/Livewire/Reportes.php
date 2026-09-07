@@ -11,6 +11,7 @@ use App\Notifications\ReporteEstadoNotificacion;
 use Spatie\Permission\Models\Role;
 
 use Livewire\Attributes\On;
+use App\Services\DictamenPdfService;
 
 class Reportes extends Component
 {
@@ -640,6 +641,9 @@ class Reportes extends Component
 
             session()->flash('ok', 'Dictamen técnico registrado exitosamente (Versión 1).');
         }
+
+        // Guardar físicamente el PDF actualizado en disco (storage/app/public/dictamenes/)
+        DictamenPdfService::guardarEnDisco($reporte, $dictamen);
 
         $this->dispatch('refrescarComentarios', id: $reporte->id);
         $this->cerrarModalDictamen();
