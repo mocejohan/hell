@@ -34,6 +34,11 @@
                             Dictamen
                         </x-nav-link>
                     @endif
+                    @if(auth()->user()->hasRole('Mesa-control') || auth()->user()->can('administrar'))
+                        <x-nav-link href="{{ route('bienes') }}" :active="request()->routeIs('bienes')">
+                            Bienes
+                        </x-nav-link>
+                    @endif
                     @can('administrar')
                         <x-nav-link href="{{ url('/admin') }}" 
                             target="_blank" rel="noopener noreferrer"
@@ -183,6 +188,11 @@
             @if(auth()->user()->hasAnyRole(['Mesa-control', 'Tecnico']) || auth()->user()->can('dictaminar'))
                 <x-responsive-nav-link href="{{ route('dictamen') }}" :active="request()->routeIs('dictamen')">
                     Dictamen
+                </x-responsive-nav-link>
+            @endif
+            @if(auth()->user()->hasRole('Mesa-control') || auth()->user()->can('administrar'))
+                <x-responsive-nav-link href="{{ route('bienes') }}" :active="request()->routeIs('bienes')">
+                    Bienes
                 </x-responsive-nav-link>
             @endif
         </div>

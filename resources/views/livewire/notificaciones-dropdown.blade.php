@@ -1,6 +1,6 @@
 <div class="relative" x-data="{ open: @entangle('open') }" @click.outside="open = false">
     {{-- Campana --}}
-    <button @click="open = !open" class="relative p-2 text-gray-500 hover:text-gray-700 focus:outline-none transition">
+    <button @click="open = !open" class="relative p-2 text-gray-500 hover:text-gray-700 focus:outline-none transition" title="Notificaciones">
         <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round"
                 d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
@@ -39,8 +39,10 @@
         {{-- Lista --}}
         <div class="max-h-80 overflow-y-auto divide-y divide-gray-100">
             @forelse ($notificaciones as $notif)
-                <div wire:click="marcarLeida('{{ $notif->id }}')"
-                     class="px-4 py-3 cursor-pointer hover:bg-gray-50 transition {{ is_null($notif->read_at) ? 'bg-blue-50 border-l-4 border-blue-500' : '' }}">
+                <div wire:key="notif-{{ $notif->id }}"
+                     wire:click="marcarLeida('{{ $notif->id }}')"
+                     title="Clic para marcar como leída y descartar"
+                     class="px-4 py-3 cursor-pointer hover:bg-gray-100 bg-blue-50/60 border-l-4 border-blue-500 transition group relative">
                     <div class="flex items-start gap-3">
                         {{-- Icono de estado --}}
                         <div class="flex-shrink-0 mt-0.5">
@@ -56,19 +58,28 @@
                         </div>
 
                         {{-- Contenido --}}
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm text-gray-800 {{ is_null($notif->read_at) ? 'font-semibold' : '' }}">
+                        <div class="flex-1 min-w-0 pr-2">
+                            <p class="text-sm text-gray-800 font-semibold leading-snug">
                                 {{ $notif->data['mensaje'] ?? 'Sin mensaje' }}
                             </p>
-                            <p class="text-xs text-gray-400 mt-1">
+                            <p class="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
                                 {{ $notif->created_at->diffForHumans() }}
                             </p>
                         </div>
 
-                        {{-- Punto de no leída --}}
-                        @if (is_null($notif->read_at))
-                            <span class="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></span>
-                        @endif
+                        {{-- Botón / Indicador de descartar --}}
+                        <div class="flex-shrink-0 flex items-center">
+                            <button wire:click.stop="marcarLeida('{{ $notif->id }}')"
+                                    title="Descartar notificación"
+                                    class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition opacity-70 group-hover:opacity-100">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             @empty

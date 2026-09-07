@@ -15,7 +15,7 @@ class NotificacionesDropdown extends Component
 
     public function marcarLeida(string $notificationId)
     {
-        $notification = auth()->user()->notifications()->find($notificationId);
+        $notification = auth()->user()?->notifications()->find($notificationId);
         if ($notification) {
             $notification->markAsRead();
         }
@@ -23,21 +23,19 @@ class NotificacionesDropdown extends Component
 
     public function marcarTodasLeidas()
     {
-        auth()->user()->unreadNotifications->markAsRead();
+        auth()->user()?->unreadNotifications->markAsRead();
     }
 
     public function getNoLeidasCountProperty(): int
     {
-        return auth()->user()->unreadNotifications()->count();
+        return auth()->user()?->unreadNotifications()->count() ?? 0;
     }
 
     public function render()
     {
         $notificaciones = auth()->user()
-            ->notifications()
-            ->latest()
-            ->take(20)
-            ->get();
+            ? auth()->user()->unreadNotifications()->latest()->take(20)->get()
+            : collect();
 
         return view('livewire.notificaciones-dropdown', [
             'notificaciones' => $notificaciones,
