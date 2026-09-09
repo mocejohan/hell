@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
             // ComentariosSeeder::class,
             EventosSeeder::class,
             BienSeeder::class,
-            // ReportesFactorySeeder::class,
+                        // ReportesFactorySeeder::class,
 
             // Otros seeders pueden ser llamados aquí
         ]);

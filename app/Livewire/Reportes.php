@@ -12,6 +12,7 @@ use Spatie\Permission\Models\Role;
 
 use Livewire\Attributes\On;
 use App\Services\DictamenPdfService;
+use App\Services\BienLookupService;
 
 class Reportes extends Component
 {
@@ -422,9 +423,8 @@ class Reportes extends Component
             return;
         }
 
-        $bien = Bien::where('numero_inventario', $term)
-            ->orWhere('numero_inventario_anterior', $term)
-            ->first();
+        // Búsqueda híbrida: Local primero, luego Aries si no existe
+        $bien = BienLookupService::buscarPorInventario($term);
 
         if ($bien) {
             $this->dictamenEquipo = $bien->equipo ?? '';
@@ -459,7 +459,7 @@ class Reportes extends Component
         unset($sug);
 
         if (empty($this->bienesSugerencias)) {
-            $this->addError('dictamenInventario', 'No se encontró ningún bien en el inventario con ese número.');
+            $this->addError('dictamenInventario', 'No se encontró el bien en el inventario local ni en Aries.');
         } else {
             $this->resetValidation('dictamenInventario');
         }
