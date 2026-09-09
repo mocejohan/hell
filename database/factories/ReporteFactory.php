@@ -28,7 +28,7 @@ class ReporteFactory extends Factory
             'descripcion'               => $this->faker->paragraph(1),
             'categoria_id'              => $this->faker->numberBetween(1, 53),   // CategoriasSeeder
             'estado_id'                 => $estadoId,
-            'departamento_congreso_id'  => $this->faker->numberBetween(1, 119),  // DepartamentosCongresoSeeder
+            'departamento_congreso_id'  => $this->faker->numberBetween(1, 118),  // DepartamentosCongresoSeeder
             'capturo_user_id'           => $this->faker->numberBetween(2, 3),    // UsuariosSeeder
             'area_informatica_id'       => $this->faker->numberBetween(1, 5),    // AreasInformaticaSeeder
             'tecnico_user_id'           => $tecnicoId,                            // Técnico principal

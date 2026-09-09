@@ -78,6 +78,17 @@ return [
             'sslmode' => 'prefer',
         ],
 
+        'aries' => [
+            'driver'   => 'sqlsrv',
+            'host'     => env('DB_SQLSRV_HOST', '172.16.2.10'),
+            'port'     => env('DB_SQLSRV_PORT', '1433'),
+            'database' => env('DB_SQLSRV_INVENTARIOS_DATABASE', 'InventariosSQL2018'),
+            'username' => env('DB_SQLSRV_USERNAME', 'sa'),
+            'password' => env('DB_SQLSRV_PASSWORD', 'Pa$$w0rd'),
+            'charset'  => 'utf8',
+            'prefix'   => '',
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DATABASE_URL'),

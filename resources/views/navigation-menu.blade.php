@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+﻿<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -34,11 +34,7 @@
                             Dictamen
                         </x-nav-link>
                     @endif
-                    @if(auth()->user()->hasRole('Mesa-control') || auth()->user()->can('administrar'))
-                        <x-nav-link href="{{ route('bienes') }}" :active="request()->routeIs('bienes')">
-                            Bienes
-                        </x-nav-link>
-                    @endif
+
                     @can('administrar')
                         <x-nav-link href="{{ url('/admin') }}" 
                             target="_blank" rel="noopener noreferrer"
@@ -190,11 +186,7 @@
                     Dictamen
                 </x-responsive-nav-link>
             @endif
-            @if(auth()->user()->hasRole('Mesa-control') || auth()->user()->can('administrar'))
-                <x-responsive-nav-link href="{{ route('bienes') }}" :active="request()->routeIs('bienes')">
-                    Bienes
-                </x-responsive-nav-link>
-            @endif
+
         </div>
 
         <!-- Responsive Settings Options -->
