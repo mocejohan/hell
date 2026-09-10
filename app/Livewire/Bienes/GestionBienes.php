@@ -3,9 +3,9 @@
 namespace App\Livewire\Bienes;
 
 use App\Models\Bien;
-use App\Imports\BienesImport;
-use App\Exports\PlantillaBienesExport;
 use App\Exports\BienesExport;
+use App\Exports\PlantillaBienesExport;
+use App\Imports\BienesImport;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
@@ -20,17 +20,17 @@ class GestionBienes extends Component
     // Filtros y Búsqueda
     public string $search = '';
     public string $equipoFiltro = '';
+    public string $sortField = 'id';
+    public string $sortDirection = 'desc';
     public int $perPage = 15;
-    public string $sortField = 'numero_inventario';
-    public string $sortDirection = 'asc';
 
     // Modales
     public bool $showModalForm = false;
-    public bool $showModalImport = false;
-    public bool $showModalHistorial = false;
     public bool $showModalDelete = false;
+    public bool $showModalHistorial = false;
+    public bool $showModalImport = false;
 
-    // Formulario Bien Individual
+    // Formulario de Bien (Crear / Editar)
     public ?int $bienId = null;
     public string $numero_inventario = '';
     public ?string $numero_inventario_anterior = '';
@@ -39,6 +39,7 @@ class GestionBienes extends Component
     public ?string $modelo = '';
     public ?string $serie = '';
     public ?string $ubicacion = '';
+    public ?string $resguardatario = '';
 
     // Importación Masiva
     public $archivoExcel;
@@ -65,6 +66,7 @@ class GestionBienes extends Component
             'modelo' => 'nullable|string|max:255',
             'serie' => 'nullable|string|max:255',
             'ubicacion' => 'nullable|string|max:255',
+            'resguardatario' => 'nullable|string|max:255',
         ];
     }
 
@@ -113,6 +115,7 @@ class GestionBienes extends Component
         $this->modelo = $bien->modelo;
         $this->serie = $bien->serie;
         $this->ubicacion = $bien->ubicacion;
+        $this->resguardatario = $bien->resguardatario;
         $this->showModalForm = true;
     }
 
@@ -128,6 +131,7 @@ class GestionBienes extends Component
             'modelo'                     => $this->modelo ? trim($this->modelo) : null,
             'serie'                      => $this->serie ? trim($this->serie) : null,
             'ubicacion'                  => $this->ubicacion ? trim($this->ubicacion) : null,
+            'resguardatario'             => $this->resguardatario ? trim($this->resguardatario) : null,
         ];
 
         if ($this->bienId) {
@@ -230,6 +234,7 @@ class GestionBienes extends Component
         $this->modelo = '';
         $this->serie = '';
         $this->ubicacion = '';
+        $this->resguardatario = '';
     }
 
     public function render()
@@ -252,7 +257,8 @@ class GestionBienes extends Component
                       ->orWhere('marca', 'like', "%{$term}%")
                       ->orWhere('modelo', 'like', "%{$term}%")
                       ->orWhere('serie', 'like', "%{$term}%")
-                      ->orWhere('ubicacion', 'like', "%{$term}%");
+                      ->orWhere('ubicacion', 'like', "%{$term}%")
+                      ->orWhere('resguardatario', 'like', "%{$term}%");
                 });
             })
             ->when($this->equipoFiltro, fn($q, $v) => $q->where('equipo', $v))
