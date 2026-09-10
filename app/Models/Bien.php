@@ -19,6 +19,7 @@ class Bien extends Model
         'modelo',
         'serie',
         'ubicacion',
+        'resguardatario',
     ];
 
     /**

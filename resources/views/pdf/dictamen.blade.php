@@ -115,7 +115,7 @@
             <td></td>
             <td style="width:32%; line-height:1.05; padding:2px 4px;">Ing. José Cruz Ruiz Mirón</td>
             <td></td>
-            <td style="width:32%; line-height:1.05; padding:2px 4px;">{{ $reporte->solicitante }}</td>
+            <td style="width:32%; line-height:1.05; padding:2px 4px;">{{ $dictamen->resguardatario ?: ($dictamen->bien?->resguardatario ?: $reporte->solicitante) }}</td>
         </tr>
         <tr style="height: 15px;">
             <td style="width:32%; line-height:1; padding:1px 4px; font-size:0.9em;">Técnico</td>

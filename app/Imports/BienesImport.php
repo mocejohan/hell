@@ -48,6 +48,7 @@ class BienesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     'modelo'                     => $datos['modelo'] ? trim((string)$datos['modelo']) : null,
                     'serie'                      => $datos['serie'] ? trim((string)$datos['serie']) : null,
                     'ubicacion'                  => $datos['ubicacion'] ? trim((string)$datos['ubicacion']) : null,
+                    'resguardatario'             => $datos['resguardatario'] ? trim((string)$datos['resguardatario']) : null,
                 ];
 
                 if ($bienExistente) {
@@ -81,6 +82,7 @@ class BienesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             'modelo' => ['modelo', 'model'],
             'serie' => ['serie', 'numero_de_serie', 'no_serie', 'num_serie', 'serial', 'sn'],
             'ubicacion' => ['ubicacion', 'area', 'departamento', 'lugar', 'adscripcion', 'oficina'],
+            'resguardatario' => ['resguardatario', 'resguardo', 'usuario', 'custodio', 'responsable', 'pertenece_a', 'nombre_usuario', 'titular'],
         ];
 
         $resultado = [
@@ -91,6 +93,7 @@ class BienesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             'modelo'                     => null,
             'serie'                      => null,
             'ubicacion'                  => null,
+            'resguardatario'             => null,
         ];
 
         // Mapear comparando claves normalizadas (minúsculas y sin acentos ni espacios raros)

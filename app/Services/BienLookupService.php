@@ -11,8 +11,8 @@ class BienLookupService
 {
     /**
      * Busca un bien por número de inventario.
-     * 1° Busca en la tabla local 'bienes'.
-     * 2° Si no existe, consulta Aries (Solo Lectura) via dbo.Inventarios.
+     * 1° Busca en la tabla local 'bienes'. Si existe pero no tiene resguardatario, intenta completarlo desde Aries.
+     * 2° Si no existe, consulta Aries (Solo Lectura) via dbo.Inventarios + dbo.Resguardos.
      * 3° Si Aries lo encuentra, lo guarda localmente y lo retorna.
      *
      * @param  string  $termino  Número de inventario a buscar
@@ -32,7 +32,20 @@ class BienLookupService
             ->first();
 
         if ($bien) {
-            return $bien; // Hit local, no se consulta Aries
+            // Si el bien local ya tiene resguardatario, retornarlo de inmediato
+            if (!empty($bien->resguardatario)) {
+                return $bien;
+            }
+
+            // Si no tiene resguardatario registrado localmente, intentamos enriquecerlo desde Aries
+            $datosAries = static::consultarAries($termino);
+            if ($datosAries && !empty($datosAries['resguardatario'])) {
+                $bien->update([
+                    'resguardatario' => $datosAries['resguardatario'],
+                ]);
+            }
+
+            return $bien;
         }
 
         // ── Paso 2: Fallback a Aries (Solo Lectura) ──
@@ -47,11 +60,12 @@ class BienLookupService
             ['numero_inventario' => $datosAries['numero_inventario']],
             [
                 'numero_inventario_anterior' => $datosAries['numero_inventario_anterior'] ?? null,
-                'equipo'    => $datosAries['equipo'] ?? null,
-                'marca'     => $datosAries['marca'] ?? null,
-                'modelo'    => $datosAries['modelo'] ?? null,
-                'serie'     => $datosAries['serie'] ?? null,
-                'ubicacion' => $datosAries['ubicacion'] ?? null,
+                'equipo'         => $datosAries['equipo'] ?? null,
+                'marca'          => $datosAries['marca'] ?? null,
+                'modelo'         => $datosAries['modelo'] ?? null,
+                'serie'          => $datosAries['serie'] ?? null,
+                'ubicacion'      => $datosAries['ubicacion'] ?? null,
+                'resguardatario' => $datosAries['resguardatario'] ?? null,
             ]
         );
     }
@@ -69,8 +83,19 @@ class BienLookupService
         if (extension_loaded('pdo_sqlsrv') || extension_loaded('pdo_dblib')) {
             try {
                 $record = DB::connection('aries')
-                    ->table('dbo.Inventarios')
-                    ->where('Número de Inventario', $termino)
+                    ->table('dbo.Inventarios as i')
+                    ->leftJoin('dbo.Resguardos as r', 'i.Número de Inventario', '=', 'r.Número de Inventario')
+                    ->select([
+                        'i.Número de Inventario as numero_inventario',
+                        'i.Número Inventario Anterior as numero_inventario_anterior',
+                        'i.Descripción del Bien as equipo',
+                        'i.Marca as marca',
+                        'i.Modelo as modelo',
+                        'i.Número de Serie as serie',
+                        'i.Ubicación as ubicacion',
+                        'r.Nombre de Usuario as resguardatario',
+                    ])
+                    ->where('i.Número de Inventario', $termino)
                     ->first();
 
                 if ($record) {
@@ -155,6 +180,7 @@ class BienLookupService
             'modelo'                     => $limpiar($record['Modelo'] ?? $record['modelo'] ?? null),
             'serie'                      => $limpiar($record['Número de Serie'] ?? $record['serie'] ?? null),
             'ubicacion'                  => $limpiar($record['Ubicación'] ?? $record['ubicacion'] ?? null),
+            'resguardatario'             => $limpiar($record['Nombre de Usuario'] ?? $record['resguardatario'] ?? null),
         ];
     }
 }

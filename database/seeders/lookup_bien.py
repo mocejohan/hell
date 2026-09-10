@@ -26,15 +26,17 @@ try:
 
     query = (
         "SELECT TOP 1 "
-        "[Número de Inventario] as numero_inventario, "
-        "[Número Inventario Anterior] as numero_inventario_anterior, "
-        "[Descripción del Bien] as equipo, "
-        "[Marca] as marca, "
-        "[Modelo] as modelo, "
-        "[Número de Serie] as serie, "
-        "[Ubicación] as ubicacion "
-        "FROM dbo.Inventarios "
-        "WHERE [Número de Inventario] = '" + termino_safe + "'"
+        "i.[Número de Inventario] as numero_inventario, "
+        "i.[Número Inventario Anterior] as numero_inventario_anterior, "
+        "i.[Descripción del Bien] as equipo, "
+        "i.[Marca] as marca, "
+        "i.[Modelo] as modelo, "
+        "i.[Número de Serie] as serie, "
+        "i.[Ubicación] as ubicacion, "
+        "r.[Nombre de Usuario] as resguardatario "
+        "FROM dbo.Inventarios i "
+        "LEFT JOIN dbo.Resguardos r ON i.[Número de Inventario] = r.[Número de Inventario] "
+        "WHERE i.[Número de Inventario] = '" + termino_safe + "'"
     )
     m.sql_query(query)
 
@@ -47,6 +49,7 @@ try:
         modelo_val = str(r['modelo'] or '').strip()
         serie_val = str(r['serie'] or '').strip()
         ubicacion_val = str(r['ubicacion'] or '').strip()
+        resguardatario_val = str(r['resguardatario'] or '').strip()
 
         # Limpiar valores tipo 'NULL' como texto
         if marca_val.upper() == 'NULL' or marca_val == '':
@@ -59,6 +62,8 @@ try:
             ubicacion_val = None
         if inv_ant.upper() == 'NULL' or inv_ant == '':
             inv_ant = None
+        if resguardatario_val.upper() == 'NULL' or resguardatario_val == '':
+            resguardatario_val = None
 
         data = {
             'numero_inventario': inv,
@@ -68,6 +73,7 @@ try:
             'modelo': modelo_val,
             'serie': serie_val,
             'ubicacion': ubicacion_val,
+            'resguardatario': resguardatario_val,
         }
         break  # Solo necesitamos el primer registro
 

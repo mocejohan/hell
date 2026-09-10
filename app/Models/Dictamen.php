@@ -19,6 +19,7 @@ class Dictamen extends Model
         'marca',
         'modelo',
         'serie',
+        'resguardatario',
         'diagnostico',
         'sugerencia',
         'observaciones',

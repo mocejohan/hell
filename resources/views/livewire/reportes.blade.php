@@ -478,6 +478,15 @@
                     </div>
                 </div>
 
+                {{-- A quién pertenece / Resguardatario --}}
+                <div>
+                    <x-label for="dictamenResguardatario" value="A quién pertenece / Resguardatario del bien" />
+                    <x-input id="dictamenResguardatario" type="text" class="mt-1 block w-full"
+                        wire:model="dictamenResguardatario" placeholder="Nombre de la persona a quien pertenece el equipo (ej. titular o resguardatario)" />
+                    <p class="text-xs text-gray-500 mt-1">Este nombre aparecerá en la firma de &quot;Recibe de conformidad&quot; en la parte inferior derecha del dictamen.</p>
+                    <x-input-error for="dictamenResguardatario" class="mt-1" />
+                </div>
+
                 {{-- Diagnóstico --}}
                 <div>
                     <x-label for="dictamenDiagnostico" value="Diagnóstico Técnico *" />
@@ -593,6 +602,12 @@
                                             <span class="text-gray-500 block text-[11px]">Serie:</span>
                                             <span class="font-semibold text-gray-800">{{ $v->serie }}</span>
                                         </div>
+                                        @if ($v->resguardatario)
+                                            <div class="col-span-2 md:col-span-4 border-t pt-1 mt-1">
+                                                <span class="text-gray-500 block text-[11px]">A quién pertenece / Resguardatario:</span>
+                                                <span class="font-semibold text-gray-800">{{ $v->resguardatario }}</span>
+                                            </div>
+                                        @endif
                                     </div>
 
                                     {{-- Diagnóstico y Sugerencia --}}
@@ -633,3 +648,4 @@
     </x-dialog-modal>
 
 </div>
+

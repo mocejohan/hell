@@ -43,6 +43,7 @@ class Reportes extends Component
     public string $dictamenMarca = '';
     public string $dictamenModelo = '';
     public string $dictamenSerie = '';
+    public string $dictamenResguardatario = '';
     public string $dictamenDiagnostico = '';
     public string $dictamenSugerencia = '';
     public string $dictamenObservaciones = '';
@@ -102,20 +103,31 @@ class Reportes extends Component
         ];
     }
 
-
-    protected $listeners = ['abrirModalAtendido', 'cerrarModalAtendido', 'guardarAtendido', 'abrirModalComentario', 'refrescarComentarios', 'abrirModalCerrar', 'abrirModalCancelar', 'abrirModalDictamen', 'abrirHistorialDictamen'];
-
-    public function abrirModalAtendido(int $id)
+    public function mount()
     {
-        $reporte = Reporte::with('tecnicos')->findOrFail($id);
+        $this->categoriasFiltradas = Categoria::all();
+    }
 
-        $this->atendidoReporteId   = $id;
-        $this->atendidoCategoriaId = $reporte->categoria_id;     // preselecciona la actual
-        $this->atendidoTecnicoId   = $reporte->tecnico_user_id;  // preselecciona el actual
+    public function updatedNuevoReporteAreaInformaticaId($areaId)
+    {
+        if ($areaId) {
+            $this->categoriasFiltradas = Categoria::where('area_informatica_id', $areaId)->get();
+        } else {
+            $this->categoriasFiltradas = Categoria::all();
+        }
 
+        $this->nuevoReporte['categoria_id'] = '';
+    }
+
+    public function abrirModalAtendido($reporteId, $categoriaId)
+    {
+        $this->atendidoReporteId = $reporteId;
+        $this->atendidoCategoriaId = $categoriaId;
+
+        $reporte = Reporte::with('tecnicos')->findOrFail($reporteId);
+        $this->atendidoTecnicoId = $reporte->tecnico_user_id;
         $this->atendidoTecnicoIds = $reporte->tecnicos->pluck('id')->toArray();
 
-        $this->resetValidation();
         $this->showAtendidoModal = true;
     }
 
@@ -125,135 +137,55 @@ class Reportes extends Component
         $this->atendidoReporteId = null;
         $this->atendidoCategoriaId = null;
         $this->atendidoTecnicoId = null;
+        $this->atendidoTecnicoIds = [];
     }
 
     public function guardarAtendido()
     {
-
         $this->validate([
             'atendidoCategoriaId' => 'required|exists:categorias,id',
-            'atendidoTecnicoIds'  => 'required|array|min:1',
+            'atendidoTecnicoId'   => 'required|exists:users,id',
+            'atendidoTecnicoIds'  => 'array',
             'atendidoTecnicoIds.*' => 'exists:users,id',
         ], [
-            'atendidoTecnicoIds.required'  => 'Debes seleccionar al menos un técnico.',
-            'atendidoTecnicoIds.min'       => 'Debes seleccionar al menos un técnico.',
-            'atendidoTecnicoIds.*.exists'  => 'Uno de los técnicos seleccionados no es válido.',
+            'atendidoCategoriaId.required' => 'La categoría es obligatoria.',
+            'atendidoTecnicoId.required'   => 'El técnico es obligatorio.',
         ]);
 
         $reporte = Reporte::findOrFail($this->atendidoReporteId);
 
-        // Estado + categoría
-        $reporte->estado_id    = 2; // Atendido
-        $reporte->categoria_id = $this->atendidoCategoriaId;
+        $categoriaOriginal = $reporte->categoria_id;
+        $categoriaNueva    = (int) $this->atendidoCategoriaId;
 
-        // (opcional) setear técnico principal al primero del checklist, si hay alguno
-        $reporte->tecnico_user_id = !empty($this->atendidoTecnicoIds)
-            ? $this->atendidoTecnicoIds[0]
-            : $reporte->tecnico_user_id; // o null si quieres limpiarlo
+        $reporte->categoria_id = $categoriaNueva;
+        $reporte->tecnico_user_id = $this->atendidoTecnicoId;
+
+        $idsSincronizar = array_unique(array_filter(array_merge(
+            [$this->atendidoTecnicoId],
+            $this->atendidoTecnicoIds
+        )));
+
+        $reporte->tecnicos()->sync($idsSincronizar);
+
+        if ($reporte->estado_id == 1) {
+            $reporte->estado_id = 2; // Atendido
+        }
 
         $reporte->save();
 
-        // Sincronizar pivote con los técnicos seleccionados
-        $reporte->tecnicos()->sync($this->atendidoTecnicoIds ?? []);
+        if ($categoriaOriginal !== $categoriaNueva) {
+            $catOldName = Categoria::find($categoriaOriginal)?->name ?? 'Sin categoría';
+            $catNewName = Categoria::find($categoriaNueva)?->name ?? 'Sin categoría';
 
-        // refrescar la card del hijo
-        $this->dispatch('refrescarComentarios', id: $reporte->id);
-
-        // Notificar a usuarios de Mesa-control
-        $usuariosMesa = User::role('Mesa-control')->get();
-        Notification::send($usuariosMesa, new ReporteEstadoNotificacion($reporte, 'Atendido', auth()->user()->name));
+            Comentario::create([
+                'reporte_id' => $reporte->id,
+                'user_id'    => auth()->id(),
+                'comentario' => "Cambio de categoría: \"{$catOldName}\" ➜ \"{$catNewName}\"",
+            ]);
+        }
 
         $this->cerrarModalAtendido();
-        session()->flash('ok', 'Reporte marcado como Atendido. Categoría y técnicos actualizados.');
-    }
-
-    public function abrirModalCrear()
-    {
-        $this->resetValidation();
-        $this->showCreateModal = true;
-    }
-
-    public function cerrarModalCrear()
-    {
-        $this->showCreateModal = false;
-    }
-
-    public function guardarNuevoReporte()
-    {
-
-        $this->validate();
-
-        DB::transaction(function () {
-            // 1) Crear el reporte
-            $reporte = Reporte::create([
-                'departamento_congreso_id' => $this->nuevoReporte['departamento_id'],
-                'solicitante'              => $this->nuevoReporte['solicitante'],
-                'descripcion'              => $this->nuevoReporte['descripcion'],
-                'area_informatica_id'      => $this->nuevoReporte['area_informatica_id'],
-                'categoria_id'             => $this->nuevoReporte['categoria_id'],
-                'tecnico_user_id'          => $this->nuevoReporte['tecnico_id'] ?: null, // principal
-                'capturo_user_id'          => auth()->id(),
-                'estado_id'                => 1,
-                'numero_copias'            => $this->nuevoReporte['numero_copias'] ?: null,
-                'numero_inventario'        => $this->nuevoReporte['numero_inventario'] ?: null,
-                'evento_id'                => $this->nuevoReporte['evento_id'] ?: null,
-            ]);
-
-            // 2) Guardar también en la pivote (si viene técnico)
-            if (!empty($this->nuevoReporte['tecnico_id'])) {
-                // evita duplicados si existe unique(reporte_id,user_id)
-                $reporte->tecnicos()->syncWithoutDetaching([
-                    $this->nuevoReporte['tecnico_id'],
-                ]);
-            }
-
-            // (Opcional) Si se capturan múltiples técnicos en el form:
-            // $reporte->tecnicos()->sync($this->nuevoReporte['tecnico_ids'] ?? []);
-        });
-
-        $this->reset('nuevoReporte');
-        $this->cerrarModalCrear();
-        session()->flash('ok', 'Reporte creado con éxito.');
-        $this->resetPage();
-    }
-
-
-    public function abrirModalComentario(int $id)
-    {
-        $this->comentarioReporteId = $id;
-        $this->comentarioTexto = '';
-        $this->resetValidation();
-        $this->showComentarioModal = true;
-    }
-
-    public function cerrarModalComentario()
-    {
-        $this->showComentarioModal = false;
-        $this->comentarioReporteId = null;
-        $this->comentarioTexto = '';
-    }
-
-    public function guardarComentario()
-    {
-        $this->validate([
-            'comentarioTexto' => 'required|string|min:2|max:2000',
-            'comentarioReporteId' => 'required|exists:reportes,id',
-        ], [
-            'comentarioTexto.required' => 'Escribe tu comentario.',
-            'comentarioTexto.min'      => 'El comentario es muy corto.',
-        ]);
-
-        Comentario::create([
-            'reporte_id' => $this->comentarioReporteId,
-            'user_id'    => auth()->id(),
-            'comentario' => $this->comentarioTexto,
-        ]);
-
-        // Notificar al hijo para refrescar su lista de comentarios
-        $this->dispatch('refrescarComentarios', id: $this->comentarioReporteId);
-
-        $this->cerrarModalComentario();
-        session()->flash('ok', 'Comentario agregado.');
+        $this->dispatch('refrescarComentarios', id: $reporte->id);
     }
 
     public function abrirModalCerrar(int $id)
@@ -268,28 +200,28 @@ class Reportes extends Component
         $this->cerrarReporteId = null;
     }
 
-    public function confirmarCierre()
+    public function confirmarCerrar()
     {
         $reporte = Reporte::findOrFail($this->cerrarReporteId);
 
-        // si ya está cerrado, no hagas doble cierre
-        if ($reporte->estado_id !== 3) {
-            $reporte->estado_id = 3;         // Cerrado
-            $reporte->closed_at = now();
-            $reporte->save();
-        }
+        $reporte->estado_id = 3; // Cerrado
+        $reporte->closed_at = now();
+        $reporte->save();
 
-        // refresca la card que corresponde
-        $this->dispatch('refrescarComentarios', id: $reporte->id);
+        Comentario::create([
+            'reporte_id' => $reporte->id,
+            'user_id'    => auth()->id(),
+            'comentario' => 'El reporte fue cerrado por la Mesa de Control.',
+        ]);
 
         $this->cerrarModalCerrar();
-        session()->flash('ok', 'Reporte cerrado correctamente.');
+        $this->dispatch('refrescarComentarios', id: $reporte->id);
     }
-
 
     public function abrirModalCancelar(int $id)
     {
         $this->cancelarReporteId = $id;
+        $this->cancelarComentario = '';
         $this->showCancelarModal = true;
     }
 
@@ -297,51 +229,158 @@ class Reportes extends Component
     {
         $this->showCancelarModal = false;
         $this->cancelarReporteId = null;
+        $this->cancelarComentario = '';
     }
 
     public function confirmarCancelar()
     {
+        $this->validate([
+            'cancelarComentario' => 'required|string|min:3',
+        ], [
+            'cancelarComentario.required' => 'El motivo de cancelación es obligatorio.',
+            'cancelarComentario.min' => 'El motivo debe tener al menos 3 caracteres.',
+        ]);
+
         $reporte = Reporte::findOrFail($this->cancelarReporteId);
 
-        if ($reporte->estado_id !== 4) { // 4 = Cancelado
-            $reporte->estado_id = 4;
-            $reporte->save();
-        }
+        $reporte->estado_id = 4; // Cancelado
+        $reporte->save();
 
-        // Guardar comentario ligado al reporte
         Comentario::create([
             'reporte_id' => $reporte->id,
             'user_id'    => auth()->id(),
-            'comentario' => '[Cancelación] ' . $this->cancelarComentario,
+            'comentario' => 'El reporte fue cancelado: ' . $this->cancelarComentario,
         ]);
 
-        // refrescar la card del hijo
-        $this->dispatch('refrescarComentarios', id: $reporte->id);
-
-        // Notificar a usuarios de Mesa-control
-        $usuariosMesa = User::role('Mesa-control')->get();
-        Notification::send($usuariosMesa, new ReporteEstadoNotificacion($reporte, 'Cancelado', auth()->user()->name));
-
         $this->cerrarModalCancelar();
-        session()->flash('ok', 'Reporte cancelado correctamente.');
+        $this->dispatch('refrescarComentarios', id: $reporte->id);
     }
 
-    public function updatedNuevoReporteAreaInformaticaId($areaId)
+    public function abrirModalComentario(int $id)
     {
-        // dd($areaId);
-        $this->nuevoReporte['categoria_id'] = ''; // reset selección
+        $this->comentarioReporteId = $id;
+        $this->comentarioTexto = '';
+        $this->showComentarioModal = true;
+    }
 
-        if (empty($areaId)) {
-            $this->categoriasFiltradas = [];
-            return;
+    public function cerrarModalComentario()
+    {
+        $this->showComentarioModal = false;
+        $this->comentarioReporteId = null;
+        $this->comentarioTexto = '';
+    }
+
+    public function guardarComentario()
+    {
+        $this->validate([
+            'comentarioTexto' => 'required|string|min:2',
+        ], [
+            'comentarioTexto.required' => 'El comentario no puede estar vacío.',
+            'comentarioTexto.min'      => 'El comentario debe tener al menos 2 caracteres.',
+        ]);
+
+        Comentario::create([
+            'reporte_id' => $this->comentarioReporteId,
+            'user_id'    => auth()->id(),
+            'comentario' => $this->comentarioTexto,
+        ]);
+
+        $this->dispatch('toast', type: 'success', msg: 'Comentario agregado');
+
+        $reporteId = $this->comentarioReporteId;
+
+        $this->cerrarModalComentario();
+
+        $this->dispatch('refrescarComentarios', id: $reporteId);
+    }
+
+    public function guardar()
+    {
+        $this->validate();
+
+        $numeroInventario = !empty($this->nuevoReporte['numero_inventario'])
+            ? trim($this->nuevoReporte['numero_inventario'])
+            : null;
+
+        $reporte = Reporte::create([
+            'departamento_congreso_id' => $this->nuevoReporte['departamento_id'],
+            'solicitante'              => $this->nuevoReporte['solicitante'],
+            'descripcion'              => $this->nuevoReporte['descripcion'],
+            'area_informatica_id'      => $this->nuevoReporte['area_informatica_id'],
+            'categoria_id'             => $this->nuevoReporte['categoria_id'],
+            'tecnico_user_id'          => $this->nuevoReporte['tecnico_id'],
+            'capturo_user_id'          => auth()->id(),
+            'numero_copias'            => $this->nuevoReporte['numero_copias'] ?: null,
+            'numero_inventario'        => $numeroInventario,
+            'evento_id'                => $this->nuevoReporte['evento_id'] ?: null,
+            'estado_id'                => 1, // Pendiente
+        ]);
+
+        $reporte->tecnicos()->sync([$this->nuevoReporte['tecnico_id']]);
+
+        // Notificar a usuarios de Mesa-control
+        $mesaControlUsers = User::role('Mesa-control')->get();
+        if ($mesaControlUsers->isNotEmpty()) {
+            Notification::send($mesaControlUsers, new ReporteEstadoNotificacion(
+                reporte: $reporte,
+                tipo: 'creado',
+                mensaje: "Nuevo reporte #{$reporte->id} registrado por " . auth()->user()->name
+            ));
         }
 
-        $this->categoriasFiltradas = Categoria::where('area_informatica_id', $areaId)
+        // Notificar al técnico asignado (si no es el mismo que capturó)
+        $tecnico = User::find($this->nuevoReporte['tecnico_id']);
+        if ($tecnico && $tecnico->id !== auth()->id()) {
+            $tecnico->notify(new ReporteEstadoNotificacion(
+                reporte: $reporte,
+                tipo: 'asignado',
+                mensaje: "Se te ha asignado el reporte #{$reporte->id}: {$reporte->solicitante}"
+            ));
+        }
+
+        $this->reset(['nuevoReporte', 'showCreateModal']);
+        session()->flash('ok', 'Reporte creado exitosamente.');
+    }
+
+    public function updatedNuevoReporteNumeroInventario($value)
+    {
+        $val = trim($value);
+        if (strlen($val) >= 2) {
+            $bien = BienLookupService::buscarPorInventario($val);
+            if ($bien && !empty($bien->ubicacion)) {
+                $depto = DepartamentoCongreso::where('name', 'like', '%' . $bien->ubicacion . '%')->first();
+                if ($depto) {
+                    $this->nuevoReporte['departamento_id'] = $depto->id;
+                }
+            }
+        }
+    }
+
+    #[On('echo:reportes,ReporteCreado')]
+    public function onReporteCreado($payload = null)
+    {
+        $this->render();
+    }
+
+    #[On('echo:reportes,ReporteActualizado')]
+    public function onReporteActualizado($payload = null)
+    {
+        $this->render();
+    }
+
+    #[On('echo:reportes,ComentarioCreado')]
+    public function onComentarioCreado($payload = null)
+    {
+        $this->render();
+    }
+
+    public function getTecnicosDisponiblesProperty()
+    {
+        return User::role('Tecnico')
             ->orderBy('name')
             ->get(['id', 'name']);
     }
 
-    
     public function abrirModalDictamen(int $id)
     {
         $reporte = Reporte::with('dictamen')->findOrFail($id);
@@ -364,6 +403,7 @@ class Reportes extends Component
             $this->dictamenMarca = $dictamen->marca;
             $this->dictamenModelo = $dictamen->modelo;
             $this->dictamenSerie = $dictamen->serie;
+            $this->dictamenResguardatario = $dictamen->resguardatario ?? '';
             $this->dictamenDiagnostico = $dictamen->diagnostico;
             $this->dictamenSugerencia = $dictamen->sugerencia;
             $this->dictamenObservaciones = $dictamen->observaciones ?? '';
@@ -378,6 +418,7 @@ class Reportes extends Component
             $this->dictamenMarca = '';
             $this->dictamenModelo = '';
             $this->dictamenSerie = '';
+            $this->dictamenResguardatario = '';
             $this->dictamenDiagnostico = '';
             $this->dictamenSugerencia = '';
             $this->dictamenObservaciones = '';
@@ -400,6 +441,7 @@ class Reportes extends Component
         $this->dictamenIdEnEdicion = null;
         $this->isEditingDictamen = false;
         $this->dictamenMotivoCambio = '';
+        $this->dictamenResguardatario = '';
         $this->bienesSugerencias = [];
         $this->selectedBienId = null;
         $this->bienDictamenWarning = null;
@@ -431,6 +473,7 @@ class Reportes extends Component
             $this->dictamenMarca = $bien->marca ?? '';
             $this->dictamenModelo = $bien->modelo ?? '';
             $this->dictamenSerie = $bien->serie ?? '';
+            $this->dictamenResguardatario = $bien->resguardatario ?? '';
             $this->selectedBienId = $bien->id;
 
             // Verificar dictámenes existentes para este bien
@@ -474,6 +517,7 @@ class Reportes extends Component
             $this->dictamenMarca = $bien->marca ?? '';
             $this->dictamenModelo = $bien->modelo ?? '';
             $this->dictamenSerie = $bien->serie ?? '';
+            $this->dictamenResguardatario = $bien->resguardatario ?? '';
             $this->selectedBienId = $bien->id;
 
             // Verificar dictámenes existentes para este bien
@@ -520,16 +564,17 @@ class Reportes extends Component
     public function guardarDictamen()
     {
         $this->validate([
-            'dictamenReporteId'     => 'required|exists:reportes,id',
-            'dictamenInventario'    => 'required|string|max:255',
-            'dictamenEquipo'        => 'required|string|max:255',
-            'dictamenMarca'         => 'required|string|max:255',
-            'dictamenModelo'        => 'required|string|max:255',
-            'dictamenSerie'         => 'required|string|max:255',
-            'dictamenDiagnostico'   => 'required|string',
-            'dictamenSugerencia'    => 'required|string',
-            'dictamenObservaciones' => 'nullable|string',
-            'dictamenMotivoCambio'  => 'nullable|string|max:255',
+            'dictamenReporteId'      => 'required|exists:reportes,id',
+            'dictamenInventario'     => 'required|string|max:255',
+            'dictamenEquipo'         => 'required|string|max:255',
+            'dictamenMarca'          => 'required|string|max:255',
+            'dictamenModelo'         => 'required|string|max:255',
+            'dictamenSerie'          => 'required|string|max:255',
+            'dictamenResguardatario' => 'nullable|string|max:255',
+            'dictamenDiagnostico'    => 'required|string',
+            'dictamenSugerencia'     => 'required|string',
+            'dictamenObservaciones'  => 'nullable|string',
+            'dictamenMotivoCambio'   => 'nullable|string|max:255',
         ], [
             'dictamenInventario.required' => 'El número de inventario es obligatorio.',
             'dictamenEquipo.required'     => 'El nombre/tipo de equipo es obligatorio.',
@@ -557,18 +602,19 @@ class Reportes extends Component
             // Si es la primera edición y no existía versión inicial respaldada, la respaldamos
             if ($maxVersion === 0) {
                 $dictamen->versiones()->create([
-                    'user_id'       => auth()->id(),
-                    'version'       => 1,
-                    'inventario'    => $dictamen->inventario,
-                    'equipo'        => $dictamen->equipo,
-                    'marca'         => $dictamen->marca,
-                    'modelo'        => $dictamen->modelo,
-                    'serie'         => $dictamen->serie,
-                    'diagnostico'   => $dictamen->diagnostico,
-                    'sugerencia'    => $dictamen->sugerencia,
-                    'observaciones' => $dictamen->observaciones,
-                    'motivo_cambio' => 'Versión inicial original',
-                    'created_at'    => $dictamen->created_at,
+                    'user_id'        => auth()->id(),
+                    'version'        => 1,
+                    'inventario'     => $dictamen->inventario,
+                    'equipo'         => $dictamen->equipo,
+                    'marca'          => $dictamen->marca,
+                    'modelo'         => $dictamen->modelo,
+                    'serie'          => $dictamen->serie,
+                    'resguardatario' => $dictamen->resguardatario,
+                    'diagnostico'    => $dictamen->diagnostico,
+                    'sugerencia'     => $dictamen->sugerencia,
+                    'observaciones'  => $dictamen->observaciones,
+                    'motivo_cambio'  => 'Versión inicial original',
+                    'created_at'     => $dictamen->created_at,
                 ]);
                 $maxVersion = 1;
             }
@@ -577,61 +623,65 @@ class Reportes extends Component
 
             // Guardar la nueva versión en el historial
             $dictamen->versiones()->create([
-                'user_id'       => auth()->id(),
-                'version'       => $nuevaVersion,
-                'inventario'    => $this->dictamenInventario,
-                'equipo'        => $this->dictamenEquipo,
-                'marca'         => $this->dictamenMarca,
-                'modelo'        => $this->dictamenModelo,
-                'serie'         => $this->dictamenSerie,
-                'diagnostico'   => $this->dictamenDiagnostico,
-                'sugerencia'    => $this->dictamenSugerencia,
-                'observaciones' => $this->dictamenObservaciones,
-                'motivo_cambio' => $this->dictamenMotivoCambio ?: "Modificación técnica (Versión {$nuevaVersion})",
+                'user_id'        => auth()->id(),
+                'version'        => $nuevaVersion,
+                'inventario'     => $this->dictamenInventario,
+                'equipo'         => $this->dictamenEquipo,
+                'marca'          => $this->dictamenMarca,
+                'modelo'         => $this->dictamenModelo,
+                'serie'          => $this->dictamenSerie,
+                'resguardatario' => $this->dictamenResguardatario,
+                'diagnostico'    => $this->dictamenDiagnostico,
+                'sugerencia'     => $this->dictamenSugerencia,
+                'observaciones'  => $this->dictamenObservaciones,
+                'motivo_cambio'  => $this->dictamenMotivoCambio ?: "Modificación técnica (Versión {$nuevaVersion})",
             ]);
 
             // Actualizar el dictamen actual
             $dictamen->update([
-                'bien_id'       => $this->selectedBienId,
-                'inventario'    => $this->dictamenInventario,
-                'equipo'        => $this->dictamenEquipo,
-                'marca'         => $this->dictamenMarca,
-                'modelo'        => $this->dictamenModelo,
-                'serie'         => $this->dictamenSerie,
-                'diagnostico'   => $this->dictamenDiagnostico,
-                'sugerencia'    => $this->dictamenSugerencia,
-                'observaciones' => $this->dictamenObservaciones,
+                'bien_id'        => $this->selectedBienId,
+                'inventario'     => $this->dictamenInventario,
+                'equipo'         => $this->dictamenEquipo,
+                'marca'          => $this->dictamenMarca,
+                'modelo'         => $this->dictamenModelo,
+                'serie'          => $this->dictamenSerie,
+                'resguardatario' => $this->dictamenResguardatario,
+                'diagnostico'    => $this->dictamenDiagnostico,
+                'sugerencia'     => $this->dictamenSugerencia,
+                'observaciones'  => $this->dictamenObservaciones,
             ]);
 
             session()->flash('ok', "Dictamen técnico actualizado exitosamente (Versión {$nuevaVersion}).");
         } else {
             // Creación inicial
             $dictamen = Dictamen::create([
-                'reporte_id'    => $this->dictamenReporteId,
-                'bien_id'       => $this->selectedBienId,
-                'inventario'    => $this->dictamenInventario,
-                'equipo'        => $this->dictamenEquipo,
-                'marca'         => $this->dictamenMarca,
-                'modelo'        => $this->dictamenModelo,
-                'serie'         => $this->dictamenSerie,
-                'diagnostico'   => $this->dictamenDiagnostico,
-                'sugerencia'    => $this->dictamenSugerencia,
-                'observaciones' => $this->dictamenObservaciones,
+                'reporte_id'     => $this->dictamenReporteId,
+                'bien_id'        => $this->selectedBienId,
+                'inventario'     => $this->dictamenInventario,
+                'equipo'         => $this->dictamenEquipo,
+                'marca'          => $this->dictamenMarca,
+                'modelo'         => $this->dictamenModelo,
+                'serie'          => $this->dictamenSerie,
+                'resguardatario' => $this->dictamenResguardatario,
+                'diagnostico'    => $this->dictamenDiagnostico,
+                'sugerencia'     => $this->dictamenSugerencia,
+                'observaciones'  => $this->dictamenObservaciones,
             ]);
 
             // Registrar Versión 1 en el historial
             $dictamen->versiones()->create([
-                'user_id'       => auth()->id(),
-                'version'       => 1,
-                'inventario'    => $this->dictamenInventario,
-                'equipo'        => $this->dictamenEquipo,
-                'marca'         => $this->dictamenMarca,
-                'modelo'        => $this->dictamenModelo,
-                'serie'         => $this->dictamenSerie,
-                'diagnostico'   => $this->dictamenDiagnostico,
-                'sugerencia'    => $this->dictamenSugerencia,
-                'observaciones' => $this->dictamenObservaciones,
-                'motivo_cambio' => 'Creación y registro inicial',
+                'user_id'        => auth()->id(),
+                'version'        => 1,
+                'inventario'     => $this->dictamenInventario,
+                'equipo'         => $this->dictamenEquipo,
+                'marca'          => $this->dictamenMarca,
+                'modelo'         => $this->dictamenModelo,
+                'serie'          => $this->dictamenSerie,
+                'resguardatario' => $this->dictamenResguardatario,
+                'diagnostico'    => $this->dictamenDiagnostico,
+                'sugerencia'     => $this->dictamenSugerencia,
+                'observaciones'  => $this->dictamenObservaciones,
+                'motivo_cambio'  => 'Creación y registro inicial',
             ]);
 
             if ($reporte->estado_id == 1) {
