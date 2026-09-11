@@ -21,10 +21,10 @@
             </td>
             <td class="text-right">
                 <div>
-                    <strong>Folio C{{ $dictamen->id }}/{{ $dictamen->created_at->format('Y') }}</strong>
+                    <strong>Folio C{{ $dictamen->id }}/{{ optional($dictamen->created_at)?->format('Y') ?? date('Y') }}</strong>
                 </div>
                 <div>
-                    Xalapa, Ver. a {{ $dictamen->created_at->format('d/m/Y') }}
+                    Xalapa, Ver. a {{ optional($dictamen->created_at)?->format('d/m/Y') ?? date('d/m/Y') }}
                 </div>
             </td>
         </tr>

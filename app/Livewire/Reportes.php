@@ -108,6 +108,30 @@ class Reportes extends Component
         $this->categoriasFiltradas = Categoria::all();
     }
 
+    public function abrirModalCrear()
+    {
+        $this->resetValidation();
+        $this->nuevoReporte = [
+            'departamento_id'     => '',
+            'solicitante'         => '',
+            'descripcion'         => '',
+            'area_informatica_id' => '',
+            'categoria_id'        => '',
+            'tecnico_id'          => '',
+            'numero_copias'       => '',
+            'numero_inventario'   => '',
+            'evento_id'           => '',
+        ];
+        $this->categoriasFiltradas = Categoria::all();
+        $this->showCreateModal = true;
+    }
+
+    public function cerrarModalCrear()
+    {
+        $this->showCreateModal = false;
+        $this->resetValidation();
+    }
+
     public function updatedNuevoReporteAreaInformaticaId($areaId)
     {
         if ($areaId) {
@@ -119,12 +143,14 @@ class Reportes extends Component
         $this->nuevoReporte['categoria_id'] = '';
     }
 
-    public function abrirModalAtendido($reporteId, $categoriaId)
+    #[On('abrirModalAtendido')]
+    public function abrirModalAtendido($id, $categoriaId = null)
     {
-        $this->atendidoReporteId = $reporteId;
-        $this->atendidoCategoriaId = $categoriaId;
+        $reporteId = is_array($id) ? ($id['id'] ?? $id[0]) : $id;
+        $this->atendidoReporteId = (int) $reporteId;
 
-        $reporte = Reporte::with('tecnicos')->findOrFail($reporteId);
+        $reporte = Reporte::with('tecnicos')->findOrFail($this->atendidoReporteId);
+        $this->atendidoCategoriaId = $categoriaId ?? $reporte->categoria_id;
         $this->atendidoTecnicoId = $reporte->tecnico_user_id;
         $this->atendidoTecnicoIds = $reporte->tecnicos->pluck('id')->toArray();
 
@@ -188,6 +214,7 @@ class Reportes extends Component
         $this->dispatch('refrescarComentarios', id: $reporte->id);
     }
 
+    #[On('abrirModalCerrar')]
     public function abrirModalCerrar(int $id)
     {
         $this->cerrarReporteId = $id;
@@ -198,6 +225,11 @@ class Reportes extends Component
     {
         $this->showCerrarModal = false;
         $this->cerrarReporteId = null;
+    }
+
+    public function confirmarCierre()
+    {
+        $this->confirmarCerrar();
     }
 
     public function confirmarCerrar()
@@ -218,6 +250,7 @@ class Reportes extends Component
         $this->dispatch('refrescarComentarios', id: $reporte->id);
     }
 
+    #[On('abrirModalCancelar')]
     public function abrirModalCancelar(int $id)
     {
         $this->cancelarReporteId = $id;
@@ -256,6 +289,7 @@ class Reportes extends Component
         $this->dispatch('refrescarComentarios', id: $reporte->id);
     }
 
+    #[On('abrirModalComentario')]
     public function abrirModalComentario(int $id)
     {
         $this->comentarioReporteId = $id;
@@ -294,6 +328,11 @@ class Reportes extends Component
         $this->dispatch('refrescarComentarios', id: $reporteId);
     }
 
+    public function guardarNuevoReporte()
+    {
+        $this->guardar();
+    }
+
     public function guardar()
     {
         $this->validate();
@@ -323,8 +362,8 @@ class Reportes extends Component
         if ($mesaControlUsers->isNotEmpty()) {
             Notification::send($mesaControlUsers, new ReporteEstadoNotificacion(
                 reporte: $reporte,
-                tipo: 'creado',
-                mensaje: "Nuevo reporte #{$reporte->id} registrado por " . auth()->user()->name
+                nuevoEstado: 'creado',
+                tecnicoNombre: auth()->user()->name
             ));
         }
 
@@ -333,8 +372,8 @@ class Reportes extends Component
         if ($tecnico && $tecnico->id !== auth()->id()) {
             $tecnico->notify(new ReporteEstadoNotificacion(
                 reporte: $reporte,
-                tipo: 'asignado',
-                mensaje: "Se te ha asignado el reporte #{$reporte->id}: {$reporte->solicitante}"
+                nuevoEstado: 'asignado',
+                tecnicoNombre: auth()->user()->name
             ));
         }
 
@@ -381,6 +420,7 @@ class Reportes extends Component
             ->get(['id', 'name']);
     }
 
+    #[On('abrirModalDictamen')]
     public function abrirModalDictamen(int $id)
     {
         $reporte = Reporte::with('dictamen')->findOrFail($id);
@@ -699,6 +739,7 @@ class Reportes extends Component
         $this->cerrarModalDictamen();
     }
 
+    #[On('abrirHistorialDictamen')]
     public function abrirHistorialDictamen(int $id)
     {
         $reporte = Reporte::with(['dictamen.versiones.user'])->findOrFail($id);
